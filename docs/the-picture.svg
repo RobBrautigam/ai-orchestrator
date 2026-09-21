@@ -1,0 +1,204 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="760" viewBox="0 0 1240 760" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+  <title>One piece of work, its whole life: from the operator's words to a refilled slot</title>
+  <desc>Ten stations. The operator speaks once; the chair writes a queue row, a worktree and a dispatch prompt; a background session builds, reviews and ships; it writes a briefing file and a pointer block; the chair folds it from the file, stops the session by id and refills the slot. One line goes back to the operator.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/>
+    </marker>
+    <style>
+      .card { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; rx: 10; }
+      .card-operator { stroke: #b45309; }
+      .card-chair { stroke: #1d4ed8; }
+      .card-session { stroke: #047857; }
+      .num { font-size: 12px; font-weight: 700; fill: #ffffff; }
+      .numbg-operator { fill: #b45309; }
+      .numbg-chair { fill: #1d4ed8; }
+      .numbg-session { fill: #047857; }
+      .title { font-size: 15px; font-weight: 700; fill: #0f172a; }
+      .cap { font-size: 12px; fill: #334155; }
+      .who { font-size: 11px; font-weight: 600; letter-spacing: 0.4px; }
+      .who-operator { fill: #b45309; }
+      .who-chair { fill: #1d4ed8; }
+      .who-session { fill: #047857; }
+      .flow { stroke: #475569; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+      .flow-back { stroke: #b45309; stroke-width: 1.6; fill: none; stroke-dasharray: 6 5; marker-end: url(#arrow); }
+      .h { font-size: 20px; font-weight: 700; fill: #0f172a; }
+      .sub { font-size: 13px; fill: #475569; }
+      .legend { font-size: 12px; fill: #334155; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1240" height="760" fill="#f8fafc"/>
+  <text x="32" y="40" class="h">One piece of work, its whole life</text>
+  <text x="32" y="62" class="sub">The operator speaks once. Everything after that is a file somebody can re-read. Color says who moves each step.</text>
+
+  <!-- legend -->
+  <rect x="900" y="26" width="12" height="12" rx="3" fill="#b45309"/><text x="918" y="37" class="legend">the operator</text>
+  <rect x="1010" y="26" width="12" height="12" rx="3" fill="#1d4ed8"/><text x="1028" y="37" class="legend">the chair</text>
+  <rect x="1104" y="26" width="12" height="12" rx="3" fill="#047857"/><text x="1122" y="37" class="legend">a session</text>
+
+  <!-- ROW 1 : y 100..250 -->
+  <!-- 1 operator's words -->
+  <g transform="translate(32,100)">
+    <rect class="card card-operator" width="220" height="150"/>
+    <rect class="numbg-operator" x="0" y="0" width="28" height="24" rx="6"/><text class="num" x="9" y="17">1</text>
+    <text class="title" x="40" y="18">The operator's words</text>
+    <text class="cap" x="14" y="46">One sentence, said once, in the</text>
+    <text class="cap" x="14" y="62">chair's window or on the phone.</text>
+    <text class="cap" x="14" y="86">Written to a dated drop file the</text>
+    <text class="cap" x="14" y="102">same minute: the receipt every</text>
+    <text class="cap" x="14" y="118">later step quotes.</text>
+    <text class="who who-operator" x="14" y="140">ON THE OPERATOR</text>
+  </g>
+
+  <!-- 2 chair -->
+  <g transform="translate(288,100)">
+    <rect class="card card-chair" width="220" height="150"/>
+    <rect class="numbg-chair" x="0" y="0" width="28" height="24" rx="6"/><text class="num" x="9" y="17">2</text>
+    <text class="title" x="40" y="18">The chair</text>
+    <text class="cap" x="14" y="46">One long-lived conversation in</text>
+    <text class="cap" x="14" y="62">one window. Holds the map; never</text>
+    <text class="cap" x="14" y="78">builds features itself.</text>
+    <text class="cap" x="14" y="102">Answers in plain English, under</text>
+    <text class="cap" x="14" y="118">a volume cap, one ask at a time.</text>
+    <text class="who who-chair" x="14" y="140">ON THE CHAIR</text>
+  </g>
+
+  <!-- 3 queue row -->
+  <g transform="translate(544,100)">
+    <rect class="card card-chair" width="220" height="150"/>
+    <rect class="numbg-chair" x="0" y="0" width="28" height="24" rx="6"/><text class="num" x="9" y="17">3</text>
+    <text class="title" x="40" y="18">The queue row</text>
+    <text class="cap" x="14" y="46">A badge (its number for life), the</text>
+    <text class="cap" x="14" y="62">repo, the worktree, the model and</text>
+    <text class="cap" x="14" y="78">effort, the gate it waits on.</text>
+    <text class="cap" x="14" y="102">Launches when a slot is free and</text>
+    <text class="cap" x="14" y="118">the gate is open. Cap in slots.</text>
+    <text class="who who-chair" x="14" y="140">ON THE CHAIR</text>
+  </g>
+
+  <!-- 4 worktree -->
+  <g transform="translate(800,100)">
+    <rect class="card card-chair" width="220" height="150"/>
+    <rect class="numbg-chair" x="0" y="0" width="28" height="24" rx="6"/><text class="num" x="9" y="17">4</text>
+    <text class="title" x="40" y="18">The worktree</text>
+    <text class="cap" x="14" y="46">One folder per arc, standing for</text>
+    <text class="cap" x="14" y="62">the arc's whole life. A fresh</text>
+    <text class="cap" x="14" y="78">branch off main rotates inside it.</text>
+    <text class="cap" x="14" y="102">Created BEFORE the prompt. The</text>
+    <text class="cap" x="14" y="118">chair owns folders, never windows.</text>
+    <text class="who who-chair" x="14" y="140">ON THE CHAIR</text>
+  </g>
+
+  <!-- 5 dispatch prompt -->
+  <g transform="translate(1000,290)">
+    <rect class="card card-chair" width="220" height="150"/>
+    <rect class="numbg-chair" x="0" y="0" width="28" height="24" rx="6"/><text class="num" x="9" y="17">5</text>
+    <text class="title" x="40" y="18">The dispatch prompt</text>
+    <text class="cap" x="14" y="46">A committed file: the operator's</text>
+    <text class="cap" x="14" y="62">words with receipts, what is NOT</text>
+    <text class="cap" x="14" y="78">on record, what exists, the work</text>
+    <text class="cap" x="14" y="94">in order, the rails, the close.</text>
+    <text class="cap" x="14" y="118">Nobody is at the keyboard.</text>
+    <text class="who who-chair" x="14" y="140">ON THE CHAIR</text>
+  </g>
+
+  <!-- ROW 2 : y 480..630, right to left -->
+  <!-- 6 background session -->
+  <g transform="translate(800,480)">
+    <rect class="card card-session" width="220" height="150"/>
+    <rect class="numbg-session" x="0" y="0" width="28" height="24" rx="6"/><text class="num" x="9" y="17">6</text>
+    <text class="title" x="40" y="18">The background session</text>
+    <text class="cap" x="14" y="46">Launched from the worktree with</text>
+    <text class="cap" x="14" y="62">an explicit model and effort.</text>
+    <text class="cap" x="14" y="78">Never asks a question; anything</text>
+    <text class="cap" x="14" y="94">operator-only goes in the briefing</text>
+    <text class="cap" x="14" y="110">with a best guess. Ends only on</text>
+    <text class="cap" x="14" y="126">its card or a named blocker.</text>
+    <text class="who who-session" x="14" y="144">ON THE SESSION</text>
+  </g>
+
+  <!-- 7 review and ship -->
+  <g transform="translate(544,480)">
+    <rect class="card card-session" width="220" height="150"/>
+    <rect class="numbg-session" x="0" y="0" width="28" height="24" rx="6"/><text class="num" x="9" y="17">7</text>
+    <text class="title" x="40" y="18">Review and ship</text>
+    <text class="cap" x="14" y="46">Tests, ONE reviewer at the close,</text>
+    <text class="cap" x="14" y="62">a rebase onto live main, a pull</text>
+    <text class="cap" x="14" y="78">request the session merges itself.</text>
+    <text class="cap" x="14" y="102">Merged is not live: the deploy is</text>
+    <text class="cap" x="14" y="118">watched and the live route probed.</text>
+    <text class="who who-session" x="14" y="140">ON THE SESSION</text>
+  </g>
+
+  <!-- 8 briefing file + pointer -->
+  <g transform="translate(288,480)">
+    <rect class="card card-session" width="220" height="150"/>
+    <rect class="numbg-session" x="0" y="0" width="28" height="24" rx="6"/><text class="num" x="9" y="17">8</text>
+    <text class="title" x="40" y="18">The briefing and pointer</text>
+    <text class="cap" x="14" y="46">Eleven sections in a committed,</text>
+    <text class="cap" x="14" y="62">pushed file: what was asked, what</text>
+    <text class="cap" x="14" y="78">happened, misses, needs, owed.</text>
+    <text class="cap" x="14" y="102">Then the close-out card, whose</text>
+    <text class="cap" x="14" y="118">last element points at the file.</text>
+    <text class="who who-session" x="14" y="140">ON THE SESSION</text>
+  </g>
+
+  <!-- 9 fold -->
+  <g transform="translate(32,480)">
+    <rect class="card card-chair" width="220" height="150"/>
+    <rect class="numbg-chair" x="0" y="0" width="28" height="24" rx="6"/><text class="num" x="9" y="17">9</text>
+    <text class="title" x="40" y="18">The fold</text>
+    <text class="cap" x="14" y="46">The chair reads the FILE, never</text>
+    <text class="cap" x="14" y="62">the chat. Close test: card up, PR</text>
+    <text class="cap" x="14" y="78">merged, deploy verified. Writes</text>
+    <text class="cap" x="14" y="94">the landed row in plain English,</text>
+    <text class="cap" x="14" y="110">stops the session by id the same</text>
+    <text class="cap" x="14" y="126">minute.</text>
+    <text class="who who-chair" x="14" y="144">ON THE CHAIR</text>
+  </g>
+
+  <!-- 10 slot refilled -->
+  <g transform="translate(32,290)">
+    <rect class="card card-chair" width="220" height="150"/>
+    <rect class="numbg-chair" x="0" y="0" width="28" height="24" rx="6"/><text class="num" x="9" y="17">10</text>
+    <text class="title" x="40" y="18">The slot refilled</text>
+    <text class="cap" x="14" y="46">The freed slot takes the next row</text>
+    <text class="cap" x="14" y="62">whose gate is open, the same</text>
+    <text class="cap" x="14" y="78">minute. The hourly tick catches</text>
+    <text class="cap" x="14" y="94">anything the minute missed.</text>
+    <text class="cap" x="14" y="118">One line back to the operator.</text>
+    <text class="who who-chair" x="14" y="140">ON THE CHAIR</text>
+  </g>
+
+  <!-- the one line back to the operator -->
+  <g transform="translate(288,290)">
+    <rect x="0" y="0" width="676" height="150" rx="10" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5"/>
+    <text class="title" x="16" y="26" fill="#9a3412">The one line the operator reads</text>
+    <text class="cap" x="16" y="52">Every line names who moves next: "on me" (the chair, with the when) or "on you" (the operator, with the link and the</text>
+    <text class="cap" x="16" y="68">under-two-minute action). An anchor emoji opens each line so the eye lands without reading:</text>
+    <text class="cap" x="16" y="94">✅ done and verified    🚀 launched, with model and slot    ⏳ waiting on a session    🤖 on me    🫵 on you    ❓ the one question</text>
+    <text class="cap" x="16" y="118">Every ask links the record itself, never the page it sits on. At most one question per message. Under about 250 words.</text>
+    <text class="cap" x="16" y="138">Between two operator messages the full picture is sent at most once; after that, one line or nothing.</text>
+  </g>
+
+  <!-- flows row 1 -->
+  <path class="flow" d="M 252 175 L 288 175"/>
+  <path class="flow" d="M 508 175 L 544 175"/>
+  <path class="flow" d="M 764 175 L 800 175"/>
+  <path class="flow" d="M 1020 175 C 1100 175, 1110 250, 1110 290"/>
+  <!-- 5 to 6 -->
+  <path class="flow" d="M 1110 440 C 1110 470, 1040 480, 1020 520"/>
+  <!-- flows row 2 (right to left) -->
+  <path class="flow" d="M 800 555 L 764 555"/>
+  <path class="flow" d="M 544 555 L 508 555"/>
+  <path class="flow" d="M 288 555 L 252 555"/>
+  <!-- 9 to 10 -->
+  <path class="flow" d="M 142 480 L 142 440"/>
+  <!-- 10 back to 1 (the loop) and to the operator line -->
+  <path class="flow" d="M 142 290 L 142 250"/>
+  <path class="flow-back" d="M 252 365 L 288 365"/>
+
+  <text x="32" y="700" class="sub">Steps 2 to 5 and 9 to 10 are the chair's, alone in its window. Steps 6 to 8 are one session, nobody at its keyboard. Step 1 is the only one that needs a person.</text>
+  <text x="32" y="722" class="sub">Every arrow is a file a fresh conversation can re-read: the drop, the queue row, the prompt, the transcript, the pull request, the briefing, the landed row. Nothing lives only in chat.</text>
+</svg>
