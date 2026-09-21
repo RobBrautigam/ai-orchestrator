@@ -2,6 +2,9 @@
 
 *Running the orchestrator unattended for hours - overnight, over a weekend, while the operator is in meetings - so the operator wakes up to finished analysis, held fixes, and ONE ranked list instead of a wall of chat. This pattern has now run multiple full nights across two orchestrators; everything below is field-tested.*
 
+> **Revised for version 2 (September 2026).** This document was written in the copy-paste era, when the chair did the night's work itself. In the background era the night's work is dispatched as queue rows with the night's rails written into each dispatch prompt (chapters 3 and 4), the chair's hourly tick (chapter 8) is the heartbeat, and the morning report is the landed table plus the top ten (chapter 11). The rails, the phase plan, the evidence-chain discipline and the learning loop below still hold as written; "window verdicts" in the morning report have become on-me and on-you lines, since the operator no longer holds session windows.
+
+
 ---
 
 ## The shape of a night

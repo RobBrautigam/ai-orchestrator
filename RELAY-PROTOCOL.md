@@ -2,6 +2,9 @@
 
 *How two (or more) orchestrators coordinate across an information wall - through committed relay FILES, not through the operator's clipboard. This is the pattern that emerged once the method grew past one orchestrator: a personal-side orchestrator and a business-side orchestrator that must cooperate without seeing into each other's worlds.*
 
+> **Revised for version 2 (September 2026).** Still the protocol in use. Two changes in the background era: each chair polls the other's outbox at its hourly tick (chapter 8) rather than "on every re-sync", and a relay that names work executable on the other side becomes a queue row there (chapter 3) rather than a starter prompt for the operator to paste.
+
+
 ---
 
 ## The problem this solves
