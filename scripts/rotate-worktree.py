@@ -82,10 +82,8 @@ def newest_write(wt: str) -> float:
 
 
 def hook_proof(wt: str, require: bool) -> int:
-    hooks_path = run(wt, "config", "--get", "core.hooksPath").stdout.strip()
-    folder = os.path.join(wt, hooks_path) if hooks_path and not os.path.isabs(hooks_path) else hooks_path
-    if not folder:
-        folder = run(wt, "rev-parse", "--path-format=absolute", "--git-path", "hooks").stdout.strip()
+    # git's own answer already honors core.hooksPath, relative or absolute or starting with ~.
+    folder = run(wt, "rev-parse", "--path-format=absolute", "--git-path", "hooks").stdout.strip()
     hook = os.path.join(folder, "commit-msg")
     if not os.path.isfile(hook):
         say("HOOK", f"no commit-msg hook runs in this worktree (looked in {folder})")
@@ -118,22 +116,27 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
-    wt = os.path.abspath(args.worktree)
+    # realpath on both sides: git prints symlink-resolved paths (macOS /var is /private/var).
+    wt = os.path.realpath(args.worktree)
     if not args.hooks_only and not args.branch:
         say("REFUSED", "a branch name is required unless --hooks-only")
         return 2
     top = run(wt, "rev-parse", "--show-toplevel")
-    if top.returncode or os.path.normcase(os.path.abspath(top.stdout.strip())) != os.path.normcase(wt):
+    if top.returncode or os.path.normcase(os.path.realpath(top.stdout.strip())) != os.path.normcase(wt):
         say("REFUSED", f"{wt} is not the top of a git worktree")
         return 2
     main = main_checkout(wt)
-    if os.path.normcase(os.path.abspath(main)) == os.path.normcase(wt):
+    if os.path.normcase(os.path.realpath(main)) == os.path.normcase(wt):
         say("REFUSED", f"{wt} is the main checkout; rotation happens only in a linked worktree")
         return 2
     if args.hooks_only:
         return hook_proof(wt, args.require_hook)
 
-    dirty = run(wt, "status", "--porcelain", "--untracked-files=no").stdout.strip()
+    status = run(wt, "status", "--porcelain", "--untracked-files=no")
+    if status.returncode:
+        say("REFUSED", f"git status failed, so nothing is proved clean: {status.stderr.strip()}")
+        return 2
+    dirty = status.stdout.strip()
     if dirty:
         say("REFUSED", f"tracked files have uncommitted changes:\n{dirty}")
         return 2
@@ -143,7 +146,11 @@ def main() -> int:
         return 2
     exists = run(wt, "rev-parse", "--verify", "--quiet", f"refs/heads/{args.branch}").returncode == 0
     if exists:
-        stranded = run(wt, "rev-list", args.branch, "--not", "--remotes").stdout.split()
+        rl = run(wt, "rev-list", f"refs/heads/{args.branch}", "--not", "--remotes", "--")
+        if rl.returncode:
+            say("REFUSED", f"could not read {args.branch}'s commits, so nothing is proved pushed: {rl.stderr.strip()}")
+            return 2
+        stranded = rl.stdout.split()
         if stranded:
             say("REFUSED", f"{args.branch} holds {len(stranded)} commit(s) on no remote branch; a reset would strand them")
             return 2

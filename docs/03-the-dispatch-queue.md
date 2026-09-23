@@ -47,7 +47,14 @@ When a slot is free and a READY row is at the top of the waiting table, the chai
 
 ## The fold
 
-When a session's briefing file lands (chapter 7), the chair, in one turn: reads the file; runs the close test; writes the landed row; frees the slot; stops the session by id; and fills the slot from the top of the waiting table. The same minute, not the next tick.
+When a session's briefing file lands (chapter 7), the chair, in one turn and the same minute (not the next tick):
+
+1. Reads the file.
+2. Runs the close test.
+3. Writes the landed row.
+4. Frees the slot.
+5. Stops the session by id.
+6. Fills the slot from the top of the waiting table.
 
 ## What the file is not
 

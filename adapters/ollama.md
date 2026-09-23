@@ -31,7 +31,7 @@ Ollama exposes an OpenAI-compatible API at `http://localhost:11434/v1/` (`/v1/ch
 
 ## What a local model is for in this method
 
-Chapter 9, rule 7: the local tier takes classification, extraction, summarizing, triage and batch passes over the operator's own data, at $0.00 and with a verification pass (quotes checked against the source) that is the same code path a paid model would get. It does not drive sessions. Measured on the workstation that wrote this: the graphics card had about 9.7 GiB free after the operator's browsers and editor took their share, which fits one agentic-class model of about 9 billion parameters; a 27-billion-parameter model at four-bit quantization ran at about 13 tokens a second at 50 to 60 thousand tokens of context on the same card. Those numbers decide what "local" can mean on a given machine, and the honest way to find yours is to measure, not to assume.
+Chapter 9, rule 7: the local tier takes classification, extraction, summarizing, triage and batch passes over the operator's own data, at $0.00 and with a verification pass (quotes checked against the source) that is the same code path a paid model would get. It does not drive sessions. Measured on the workstation that wrote this: the graphics card had about 9.7 GiB free after the operator's browsers and editor took their share, which fits one agentic-class model of about 9 billion parameters; a public report for the same card put a 27-billion-parameter model at four-bit quantization at about 13 tokens a second at 50 to 60 thousand tokens of context. Those numbers decide what "local" can mean on a given machine, and the honest way to find yours is to measure, not to assume.
 
 ## A router is never the mechanism
 

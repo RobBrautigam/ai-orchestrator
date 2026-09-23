@@ -8,7 +8,7 @@
 
 Two signals, either one starts a fold:
 
-- the session's briefing file appears on the main branch (a merged pull request that added `docs/orchestration/briefings/<date>-<arc>.md`);
+- the session's briefing file appears on the main branch (a merged pull request that added `docs/orchestration/briefings/<date>-<arc>-s<N>.md`, the name the fold check matches against the running table);
 - the tool's own session list shows the session as done, and its last output carries the pointer block.
 
 The first is the completion signal proper; the second is the earlier one. The chair watches both: the tick fetches main and lists sessions every hour, and a notification hook (where the tool has one) wakes the chair when a session finishes or needs input.

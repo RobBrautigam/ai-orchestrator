@@ -26,8 +26,11 @@ import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
+# Your system and global git configuration are shut out (GIT_CONFIG_GLOBAL, git 2.32 or later), so a global
+# core.hooksPath, commit signing or template folder of yours is never read, used or touched by the toy repositories.
 ENV = dict(os.environ, GIT_AUTHOR_NAME="selftest", GIT_AUTHOR_EMAIL="selftest", GIT_COMMITTER_NAME="selftest",
-           GIT_COMMITTER_EMAIL="selftest", GIT_CONFIG_NOSYSTEM="1", GIT_TERMINAL_PROMPT="0")
+           GIT_COMMITTER_EMAIL="selftest", GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
+           GIT_TERMINAL_PROMPT="0")
 
 QUEUE = """# The dispatch queue
 
@@ -76,7 +79,7 @@ def write(path: str, text: str) -> None:
 
 def commit(cwd: str, message: str, *paths: str) -> None:
     git(cwd, "add", *(paths or (".",)))
-    out = git(cwd, "commit", "-q", "-m", message)
+    out = git(cwd, "-c", "commit.gpgsign=false", "commit", "-q", "-m", message)
     if out.returncode:
         raise RuntimeError(out.stderr)
 
@@ -119,18 +122,24 @@ def run_checks(tmp: str, scripts: str) -> None:
 
     # --- the commit-msg hook -------------------------------------------------------------
     hooks = git(main, "rev-parse", "--path-format=absolute", "--git-path", "hooks").stdout.strip()
+    inside = os.path.commonpath([os.path.realpath(hooks), os.path.realpath(tmp)]) == os.path.realpath(tmp)
+    check(inside, "the toy repository's hooks folder is inside the temporary folder (nothing of yours is touched)", hooks)
+    if not inside:
+        return
     os.makedirs(hooks, exist_ok=True)
     dst = os.path.join(hooks, "commit-msg")
     shutil.copy(HOOK, dst)
     os.chmod(dst, 0o755)
     write(os.path.join(main, "notes.txt"), "a note\n")
     git(main, "add", "notes.txt")
-    bad = git(main, "commit", "-q", "-m", "docs: a note", "-m", "Co-Authored-By: Some Tool")
+    bad = git(main, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "docs: a note", "-m", "Co-Authored-By: Some Tool")
     check(bad.returncode != 0, "the hook refuses a commit that carries a Co-Authored-By trailer", bad.stdout + bad.stderr)
-    bad2 = git(main, "commit", "-q", "-m", "docs: a note", "-m", "Generated with Some Tool")
+    bad2 = git(main, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "docs: a note", "-m", "Generated with Some Tool")
     check(bad2.returncode != 0, "the hook refuses a commit that carries a \"Generated with\" line", bad2.stdout + bad2.stderr)
-    ok = git(main, "commit", "-q", "-m", "docs: a note")
-    check(ok.returncode == 0, "the hook lets an honest commit through", ok.stdout + ok.stderr)
+    bad3 = git(main, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "docs: a note", "-m", "🤖 Generated with Some Tool")
+    check(bad3.returncode != 0, "the hook refuses the same line behind an emoji", bad3.stdout + bad3.stderr)
+    ok = git(main, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "docs: a lockfile generated with the package manager")
+    check(ok.returncode == 0, "the hook lets an honest commit through, even one that mentions something generated with a tool", ok.stdout + ok.stderr)
     git(main, "push", "-q", "origin", "main")
 
     # --- wall-check: the publish gate and its negative controls ---------------------------
@@ -157,6 +166,9 @@ def run_checks(tmp: str, scripts: str) -> None:
     fc = ("fold-check.py", "--root", main, "--exit-code")
     r = script(scripts, *fc)
     check(r.returncode == 0 and "all clear: 2 session(s)" in r.stdout, "fold-check reads all clear before anything landed", r.stdout + r.stderr)
+    r = script(scripts, *fc, "--ref", "origin/no-such-branch")
+    check(r.returncode == 2 and "NOT an all clear" in r.stdout and "all clear:" not in r.stdout,
+          "fold-check never says all clear when it could not read the ref", r.stdout + r.stderr)
     write(os.path.join(main, "docs/orchestration/briefings/2026-01-15-demo-s1-interim.md"), "# interim\n")
     commit(main, "docs: an interim briefing")
     git(main, "push", "-q", "origin", "main")
@@ -218,6 +230,8 @@ def run_checks(tmp: str, scripts: str) -> None:
     check(r.returncode == 0 and "nothing on the main line" in r.stdout, "done-on-main reads clean when nothing touched the file", r.stdout + r.stderr)
     r = script(scripts, *dm, "--files", "src/missing.txt")
     check(r.returncode == 2 and "REFUSED" in r.stdout, "done-on-main refuses rather than claim a check that saw nothing", r.stdout + r.stderr)
+    r = script(scripts, "done-on-main.py", "--root", main, "--no-fetch", "--since", "deadbeef", "--files", "src/app.txt")
+    check(r.returncode == 2 and "is not a commit here" in r.stdout, "done-on-main refuses a mistyped start instead of reading clean", r.stdout + r.stderr)
 
 
 if __name__ == "__main__":

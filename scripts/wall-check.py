@@ -86,6 +86,14 @@ def tracked_files(root: str, include_untracked: bool) -> list[str]:
     return [f for f in files if os.path.splitext(f)[1].lower() not in SKIP_EXT]
 
 
+def rel_or_none(path: str, root: str) -> str | None:
+    """The path relative to the root, or None when it cannot be one of the root's files (another drive)."""
+    try:
+        return os.path.relpath(path, root).replace("\\", "/")
+    except ValueError:
+        return None
+
+
 def inside_allowed(line: str, start: int, end: int, allowed: list[str]) -> bool:
     low = line.lower()
     for phrase in allowed:
@@ -114,8 +122,8 @@ def main() -> int:
         print("wall-check: nothing to check (no --list and --no-built-in)", file=sys.stderr)
         return 2
 
-    this_file = os.path.relpath(os.path.abspath(__file__), root).replace("\\", "/")
-    list_files = {os.path.relpath(os.path.abspath(os.path.expanduser(p)), root).replace("\\", "/") for p in args.list}
+    this_file = rel_or_none(os.path.abspath(__file__), root)
+    list_files = {rel_or_none(os.path.abspath(os.path.expanduser(p)), root) for p in args.list} - {None}
     hits = 0
     scanned = 0
     for rel in tracked_files(root, args.include_untracked):

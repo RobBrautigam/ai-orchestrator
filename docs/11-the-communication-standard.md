@@ -10,7 +10,16 @@
 
 Every technical term is paired with its plain meaning the first time it appears in a message: "merged the pull request (folded the change into the main codebase)", "rotated the branch (started a fresh line of work off the current main)". Coined system names, phase numbers, badge numbers and internal labels are useless to the operator bare; each carries what it is and what it does for them. A recommendation answers three questions in words a non-engineer reads once: what is it, what does it do for me, why now.
 
-**An ask for approval carries its whole context in the same message.** What the thing is in plain words; what is wrong with it today; exactly what will be done; what changes for the operator afterwards; the risk and how it is reversed; how long it takes. A bare "say the word on X" is the defect, however many times X was explained before, because the operator reads only the latest message.
+**An ask for approval carries its whole context in the same message:**
+
+- what the thing is, in plain words;
+- what is wrong with it today;
+- exactly what will be done;
+- what changes for the operator afterwards;
+- the risk, and how it is reversed;
+- how long it takes.
+
+A bare "say the word on X" is the defect, however many times X was explained before, because the operator reads only the latest message.
 
 **An ask that tells the operator to do something carries the artifact itself:** the paste-ready text, the link, the exact command. Never "send the message from item 4".
 
@@ -22,7 +31,16 @@ A status or triage reply stays under about 250 words. Depth goes into a committe
 
 At most one decision or question for the operator per reply. Everything else queues and is surfaced one at a time, each in a later message, when the earlier one is answered. A mechanical paste is not an ask.
 
-**The shape of the one ask, in this order:** the question; the options and approaches; the recommendation with one reason; what the answer changes. Never the recommendation woven into the question or the options folded into the recommendation; the blended form reads as jumbled.
+**The shape of the one ask, in this order:**
+
+1. The question.
+2. The options and approaches.
+3. The recommendation, with one reason.
+4. What the answer changes.
+
+Never the recommendation woven into the question, or the options folded into the recommendation: the blended form reads as jumbled.
+
+**Where the answer happens.** When the chair's setup has one, the ask points at a **decision card**: one record holding the question, its options and the recommendation, which the operator answers in one step (an issue with a checklist, a form, a document with a reply box). The card is the record; the message links it.
 
 ### 4. The mechanical form
 
@@ -146,7 +164,7 @@ The operator asked, an hour ago, for two things and went to lunch. Two sessions 
 >
 > 🫵 On you: tap the card. Under a minute.
 
-Two topics, two headings; one question, shaped question-then-options-then-recommendation-then-what-it-changes; every line anchored; every work line says on me or on you; every ask links its own record; under 250 words; and it is the LAST message of the chair's turn, so nothing in it hides between tool calls.
+Three topics, three headings; one question, shaped question-then-options-then-recommendation-then-what-it-changes; every line anchored; every work line says on me or on you; every ask links its own record; under 250 words; and it is the LAST message of the chair's turn, so nothing in it hides between tool calls.
 
 ## Carrying this standard to another project
 

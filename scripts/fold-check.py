@@ -21,7 +21,8 @@ Options:
     --sessions <file>     the tool's live session list as JSON, normalized to a list of objects with a
                           name (or id) and a state; "-" reads stdin. Keys read: name|title|displayName,
                           id|sessionId|session_id, state|status.
-    --exit-code           exit 1 when anything is named (for a script's gate); default is always 0
+    --exit-code           exit 1 when anything is named (for a script's gate); without it, 0 whenever the
+                          check ran. Exit 2 always means it could not check (below).
 
 What it names, one line each:
     FOLD OWED        the session's briefing file is on the ref and its row still holds a slot
@@ -33,8 +34,15 @@ What it names, one line each:
     GONE             the running table shows it and the tool no longer lists it at all
     UNTRACKED        the tool lists a live session the running table does not show
 
-A row whose session cell reads "(free...)" is a free slot and is skipped. An interim
-briefing (a file name ending in "-interim") is never a landing.
+A row whose session cell reads "(free...)" is a free slot and is skipped. A briefing counts
+as landed when its file name ends with the session name the running table shows
+(`2026-01-15-payments-s4.md` for `payments-s4`); an interim briefing (a file name ending in
+"-interim") is never a landing. The running and landed tables are found under headings whose
+first word is "Running" and "Landed" (an emoji before the word is fine).
+
+When anything could not be read (the queue file, the ref, the session list, or a queue with no
+running table), it never says "all clear": it prints "could not check" with the reason and exits 2,
+whatever --exit-code says, because a false all clear is this check's worst failure.
 """
 from __future__ import annotations
 
@@ -63,7 +71,8 @@ def tables(markdown: str) -> dict[str, list[dict[str, str]]]:
     header: list[str] | None = None
     for line in markdown.splitlines():
         if line.startswith("## "):
-            heading = line[3:].split(":")[0].split()[0].lower() if line[3:].strip() else ""
+            words = [w for w in line[3:].split(":")[0].split() if any(c.isalnum() for c in w)]
+            heading = words[0].strip(",.").lower() if words else ""
             header = None
             continue
         if not line.lstrip().startswith("|"):
@@ -72,6 +81,7 @@ def tables(markdown: str) -> dict[str, list[dict[str, str]]]:
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
         if header is None:
             header = [c.lower() for c in cells]
+            found.setdefault(heading, [])
             continue
         if all(set(c) <= set("-: ") for c in cells):
             continue
@@ -137,13 +147,16 @@ def main() -> int:
         queue_text = open(os.path.join(root, args.queue), encoding="utf-8").read()
     except OSError as exc:
         print(f"fold-check: read failed: the queue file {args.queue}: {exc}")
+        print("fold-check: could not check everything (above); this is NOT an all clear")
         return 2
     t = tables(queue_text)
+    notes: list[str] = []
+    if "running" not in t:
+        notes.append(f"read failed: no running table in {args.queue} (a '## Running' heading followed by a table)")
     running = [(r, session_of(r.get("session", ""))) for r in t.get("running", [])]
     running = [(r, s) for r, s in running if s]
     landed_names = {session_of(r.get("session", ""))[0].lower() for r in t.get("landed", []) if session_of(r.get("session", ""))}
 
-    notes: list[str] = []
     try:
         listing = git(root, "ls-tree", "-r", "--name-only", args.ref, "--", args.briefings.rstrip("/") + "/").splitlines()
     except RuntimeError as exc:
@@ -197,14 +210,19 @@ def main() -> int:
                 name("UNTRACKED", label, f"the tool lists {label} ({s['state'] or 'live'}) and the running table does not: record it or stop it")
 
     if args.json:
-        print(json.dumps({"running": len(running), "findings": findings, "notes": notes}, indent=2))
+        print(json.dumps({"running": len(running), "findings": findings, "notes": notes,
+                          "checked": not notes}, indent=2))
     else:
         for n in notes:
             print(f"fold-check: {n}")
         for f in findings:
             print(f"{f['kind']}: {f['text']}")
-        if not findings:
+        if notes:
+            print("fold-check: could not check everything (above); this is NOT an all clear")
+        elif not findings:
             print(f"fold-check: all clear: {len(running)} session(s) in the running table, none owes the chair anything")
+    if notes:
+        return 2
     return 1 if (findings and args.exit_code) else 0
 
 

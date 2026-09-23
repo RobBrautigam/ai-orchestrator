@@ -35,7 +35,7 @@ The `sessions_spawn` tool spawns a sub-agent session with `task`, `agentId`, `cw
 
 ## Scheduled runs
 
-`openclaw cron` runs isolated recurring jobs with `--message`, `--thinking` and a choice of main, current, isolated or custom session. On the operator's own machine this method prefers the chair's tick over a cron entry (chapter 10: nothing periodic on the operator's machine without their word); on a server OpenClaw's cron is the natural home for the tick.
+`openclaw cron` runs isolated recurring jobs with `--message`, `--thinking` and a choice of main, current, isolated or custom session. On the operator's own machine this method prefers the chair's tick over a cron entry (chapter 8: nothing periodic on the operator's machine without their word); on a server OpenClaw's cron is the natural home for the tick.
 
 ## Cross-session messages
 

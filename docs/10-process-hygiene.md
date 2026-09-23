@@ -31,7 +31,7 @@ All four, every time:
 - the process is at least five minutes old (a `sleep` a minute old belongs to a live session's shell call and exits on its own);
 - the command line still matches what the census recorded, so a recycled process id cannot be mistaken for the one that was measured.
 
-Re-verify every id against the live process table immediately before touching it, never against a snapshot taken minutes earlier. A census that flags a live session's helper as an orphan is a bug in the census, and it happened on the first run of the very script this rule ships with.
+Re-verify every id against the live process table immediately before touching it, never against a snapshot taken minutes earlier. A census that flags a live session's helper as an orphan is a bug in the census, and it happened on the first run of the census script the estate that wrote this used (not included here: the census is your own tooling's job, and the four-part proof above is what it must apply).
 
 **A stopped task is not a stopped process.** Stopping a long-running background command by the tool's task id routinely leaves the shell wrapper and its child resident on Windows. After stopping any such command, read the process table before believing it: two test runs stopped by task id were still running twenty minutes later with thousands of CPU-seconds on them, starving the measurement the close was waiting for. And the mirror: a session's children are found by parent chain from the session's own process id, never by a path match on a command line, because a test runner started from a script in a worktree does not carry the worktree's path and the negative proves nothing.
 
@@ -48,4 +48,4 @@ Anything of the operator's own: the editor, the browsers, the chat and meeting c
 - A session's close sequence gets one more line before the card: what did I start, and is it stopped.
 - The chair's tick runs the census and puts the three counts on the board beside the running table.
 - Adding a tool server is a scope decision, stated out loud: which repositories need it, and would a remote server do instead.
-- A new orphan family the census does not recognize gets a role added to the census script rather than a one-off kill.
+- A new orphan family the census does not recognize gets a role added to your census script rather than a one-off kill.

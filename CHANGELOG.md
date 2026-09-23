@@ -59,4 +59,13 @@ One conversation per folder. The chair owns folders, the operator owns windows. 
 
 ## Version 1 (July 2026)
 
-The initial playbook: worktrees plus an orchestrator conversation; copy-paste starter prompts; the eleven-section briefing as a chat block; the durable board; window management and the teardown order; the relay protocol; overnight autopilot; the installable `/orchestrator-brief` skill.
+The initial playbook:
+
+- worktrees plus an orchestrator conversation;
+- copy-paste starter prompts;
+- the eleven-section briefing as a chat block;
+- the durable board;
+- window management and the teardown order;
+- the relay protocol;
+- overnight autopilot;
+- the installable `/orchestrator-brief` skill.

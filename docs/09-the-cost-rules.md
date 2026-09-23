@@ -71,18 +71,18 @@ Summarizing your own transcripts, classifying your own archive, extracting facts
 
 ### 8. A router is never the mechanism
 
-Pointing a coding tool at a different provider through a gateway loses the tool's prompt caching. On a median implementation session on the estate that wrote this, 88 million of 88.7 million tokens were cache reads; without caching, the "cheaper" model behind the router cost more than the expensive one without it. When a different model is wanted, it is run by the CLI that supports it natively or called as a tool from inside a session, never by re-pointing the session.
+Pointing a coding tool at a different provider through a gateway loses the tool's prompt caching. On a median implementation session on the estate that wrote this, 88 million of 88.7 million tokens were cache reads; without caching, the "cheaper" model behind the router cost more than the expensive model with its cache intact. When a different model is wanted, it is run by the CLI that supports it natively or called as a tool from inside a session, never by re-pointing the session.
 
 ### 9. Measure completion, not tokens
 
-A trial that reports "40 percent fewer tokens" and not "the same task done, reviewed, with the same defect count" proves nothing. A public benchmark measured a cheaper model resolving 12 percent of tasks for three times the tokens of a stronger model that resolved 54 percent: the cheap model cost more because it could not finish.
+A trial that reports "40 percent fewer tokens" and not "the same task done, reviewed, with the same defect count" proves nothing. A public benchmark (Terminal-Bench 4.0, as read on 2026-09-19) measured a cheaper model resolving 12 percent of tasks for three times the tokens of a stronger model that resolved 54 percent: the cheap model cost more because it could not finish.
+
+### 10. A long-context model in the chair's own window is a choice, stated
+
+The one conversation that holds the cross-arc map may run on a long-context variant, because it genuinely reads more than any session. It is still a cost decision made out loud, re-examined when the chair's turns grow slow or its allowance runs short, and it never spreads to a background session by inheritance: every background launch names its own model (rule 1).
 
 ## The effort experiment
 
 The default effort is re-set on data, not on opinion. The shape: two sessions of about the same kind (research and measure; an audit; a sweep) launched the same hour on the same model, one at `high` and one at the top effort, neither told to behave differently. At each fold the chair records tokens moved, wall time, the reviewer's findings, metered spend, and defects found later (a wrong fact, a page the chair had to fix, a follow-up session the miss caused). The reading, in plain words: what each level cost, what each produced, and whether the extra bought anything a reader can see. The first pair on the estate that wrote this: same wall time; the top effort moved about 58 percent more context and produced about 44 percent more output; both delivered every asked item and both caught a wrong number of their own before publishing it. Defects found later are still being filled in, and the default has not moved until they are.
 
 The bar for moving it is the operator's, and on that estate it reads: **no savings bought with lower-quality output.** A cheaper setting earns the default only when the matched pairs show the same work done with the same defect count. Until then the default stays at the top effort, and every launch still names it.
-
-### 10. A long-context model in the chair's own window is a choice, stated
-
-The one conversation that holds the cross-arc map may run on a long-context variant, because it genuinely reads more than any session. It is still a cost decision made out loud, re-examined when the chair's turns grow slow or its allowance runs short, and it never spreads to a background session by inheritance: every background launch names its own model (rule 1).

@@ -75,6 +75,6 @@ The session's close emits the briefing as its terminal artifact. The on-demand c
 
 - Pasting the briefing body into chat when the file pushed.
 - Variant bookends. The chair's fold parses the literal ones.
-- A rendered question alongside a terminal briefing: a question is asked mid-session at the decision point, or it lives in section 7 for the chair to surface. A session never ends on a question.
+- A rendered question alongside a terminal briefing: a question the session cannot settle lives in section 7 with a best guess, for the chair to surface. A session never ends on a question.
 - A briefing that describes only the last task of a long session.
 - A starter prompt after the block. Nothing comes after the block.

@@ -90,7 +90,7 @@ expects-reply: <yes: what | no>
 
 ## Optional hardening: the prompt hook
 
-A small prompt-submit hook in each repo (whatever your Claude Code setup supports) that checks the inbound directory for unread relays whenever the operator sends ANY message, and injects a one-line flag if something is waiting. That gives three delivery layers: poll-on-resync (guarantee), operator ping (accelerator), hook (catch-all). In live use, the hook has caught relays the same minute the operator typed anything at all.
+A small prompt-submit hook in each repo (whatever your tool's hooks support) that checks the inbound directory for unread relays whenever the operator sends ANY message, and injects a one-line flag if something is waiting. That gives three delivery layers: poll-on-resync (guarantee), operator ping (accelerator), hook (catch-all). In live use, the hook has caught relays the same minute the operator typed anything at all.
 
 ## What a healthy exchange looks like
 

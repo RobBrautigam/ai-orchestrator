@@ -4,11 +4,13 @@
 
 **Who it is for:** anyone already using an agentic coding tool who wants to run more than one session at a time without becoming the bottleneck. Solo builders running five to ten sessions a day, small teams sharing one repository, anyone whose agents keep colliding, stalling, or burning a week's allowance in an afternoon.
 
-**What it is:** a method (thirteen short chapters), templates to copy, and a few small scripts that turn its rules into checks. It works with Claude Code, Codex, Gemini CLI, Cursor, OpenCode, Hermes, OpenClaw, and local models through Ollama. Nothing to install beyond git and Python.
+**What it is:** a method (thirteen short chapters), templates to copy, and a few small scripts that turn its rules into checks. It works with Claude Code, Codex, Gemini CLI, Cursor, OpenCode, Hermes, OpenClaw, and local models through Ollama. Nothing to install beyond git and Python. Every rule in it was written after something went wrong on a real fleet; the chapters call that fleet "the estate that wrote this" (the set of repositories and sessions one chair ran).
 
 ---
 
 ## Start in five minutes
+
+The commands below are POSIX shell: on Windows run them in Git Bash, and on macOS type `python3` where they say `python`.
 
 1. **See it work on a throwaway repository** (git 2.36 or later, Python 3.9 or later, nothing else):
 
@@ -18,7 +20,7 @@
    python scripts/selftest.py
    ```
 
-   Twenty checks run against a toy repository built in a temporary folder: a queue, a worktree, a landed briefing, the fold check naming it, the worktree rotation refusing the unsafe cases, the publish gate catching a planted secret. The folder is deleted at the end (`--keep` leaves it for you to look at).
+   Twenty-four checks run against a toy repository built in a temporary folder: a queue, a worktree, a landed briefing, the fold check naming it, the worktree rotation refusing the unsafe cases, the publish gate catching a planted private name, email and home path. Your own git configuration is shut out and never touched. The folder is deleted at the end (`--keep` leaves it for you to look at).
 
 2. **Copy the kit into your repository:**
 
@@ -27,14 +29,17 @@
    mkdir -p docs/orchestration/prompts docs/orchestration/briefings docs/orchestration/operator-directives scripts
    cp /path/to/ai-orchestrator/templates/QUEUE.md docs/orchestration/prompts/QUEUE.md
    cp -r /path/to/ai-orchestrator/templates docs/orchestration/templates
-   cp /path/to/ai-orchestrator/scripts/*.py scripts/
+   cp -r /path/to/ai-orchestrator/docs docs/orchestration/method
+   for f in fold-check rotate-worktree done-on-main wall-check; do cp /path/to/ai-orchestrator/scripts/$f.py scripts/; done
    ```
+
+   Then empty the three tables of the copied `QUEUE.md` (keep the headings and the cap line): the rows in it are an invented example. The chair creates `docs/orchestration/board.md` on its first boot.
 
 3. **Open one conversation** in your tool, in the repository's main checkout, and paste [the chair's starter prompt](docs/01-the-chair.md#the-chairs-starter-prompt). It boots from those files.
 
 4. **Tell it what you want, in one sentence.** It writes your words to a dated file, adds a queue row, creates the worktree, writes the dispatch prompt, and launches the session in the background, naming the model and effort in its reply.
 
-5. **Read the one line it sends when the session lands.** Answer the one question, if there is one, at the link it gives you. From any terminal, `python scripts/fold-check.py` shows whether anything is waiting on the chair.
+5. **Read the one line it sends when the session lands.** Answer the one question, if there is one, at the link it gives you. From the repository's main checkout, after a `git fetch`, `python scripts/fold-check.py` shows whether anything is waiting on the chair.
 
 Your tool's exact commands are in [adapters/](adapters/). The rest of this page is the map.
 
@@ -118,6 +123,8 @@ The model is tool-agnostic. What differs per tool is four commands: start a sess
 | OpenClaw | [adapters/openclaw.md](adapters/openclaw.md) | `openclaw agent exec --message-file <prompt> --cwd <worktree> --model <provider/model> --json` | `sessions_spawn` takes `worktree`, `worktreeName`, `worktreeBaseRef` | `sessions_spawn`, with depth caps |
 | A local model through Ollama | [adapters/ollama.md](adapters/ollama.md) | `ollama serve`, then any tool above pointed at `http://localhost:11434/v1`; `ollama launch <tool>` | the tool's own | the tool's own |
 
+The adapters that run a tool as a process write its output to `<worktree>/tmp/`: create that folder and add `tmp/` to `.gitignore` before the first launch.
+
 **Grok, GLM, DeepSeek and other models** are reached through the tools above, not as tools of their own: [adapters/providers.md](adapters/providers.md) has one table of which tool reaches which model family, and how.
 
 The rule that does not change per tool: **every launch names its model and its effort, in the command and in the chat line that reports it.** An unspecified model is the most expensive one.
@@ -126,7 +133,7 @@ The rule that does not change per tool: **every launch names its model and its e
 
 ## The scripts: rules turned into checks
 
-Standard library Python, no dependencies, each proven by [`scripts/selftest.py`](scripts/selftest.py) on a toy repository (and each seen to fail it when deliberately broken).
+Standard library Python, no dependencies, each proven by [`scripts/selftest.py`](scripts/selftest.py) on a toy repository (and each seen to fail it when deliberately broken). Each one refuses, or says "could not check", rather than report clean from a check that saw nothing.
 
 | Script | What it checks | Chapter |
 |---|---|---|
@@ -134,7 +141,7 @@ Standard library Python, no dependencies, each proven by [`scripts/selftest.py`]
 | [`scripts/rotate-worktree.py`](scripts/rotate-worktree.py) | Rotates a standing worktree onto a fresh branch, refusing the unsafe cases, and proves the commit hook runs there | 2 |
 | [`scripts/done-on-main.py`](scripts/done-on-main.py) | Whether an owed item's work already landed on main, by its files and by its title's words, before a prompt is written | 7 |
 | [`scripts/wall-check.py`](scripts/wall-check.py) | The publish gate: a word list kept outside the repository, plus secret, email and home-path shapes, over every tracked file | 12 |
-| [`hooks/commit-msg`](hooks/commit-msg) | Optional: refuses a co-author trailer or a "generated with" line, for teams whose policy is that the tool is not a contributor | 13 |
+| [`hooks/commit-msg`](hooks/commit-msg) | Optional: refuses any Co-Authored-By trailer (human ones too) and any line that starts with "Generated with", for teams whose policy is that the tool is not a contributor | 13 |
 
 ---
 

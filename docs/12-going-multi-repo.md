@@ -16,7 +16,14 @@ A wall is also a publish gate. This repository's own [`scripts/wall-check.py`](.
 
 ## The relay protocol
 
-Once two chairs run daily, clipboard relaying breaks: the operator becomes the single point of failure for cross-domain dependencies. The evolved system: relays are committed files in known inbound and outbound directories, each self-contained with a standard header (`relay-id`, `handles`, `action-owner`, `expects-reply`); each chair polls the other's outbox at every tick (the poll is the delivery guarantee; an operator ping accelerates but is never load-bearing); acknowledgements carry a terminator so two polite chairs do not acknowledge each other forever; and a relay that NAMES an action does not ASSIGN it: execution transfers only through an explicit `action-owner`. The standing routing rule that fell out of it: work executable by the other chair's domain relays to it the same turn it surfaces; the operator's own list holds only genuinely human judgment. Full specification: [RELAY-PROTOCOL.md](../RELAY-PROTOCOL.md).
+Once two chairs run daily, clipboard relaying breaks: the operator becomes the single point of failure for cross-domain dependencies. The evolved system:
+
+- **Relays are committed files** in known inbound and outbound directories, each self-contained with a standard header (`relay-id`, `handles`, `action-owner`, `expects-reply`).
+- **Each chair polls the other's outbox at every tick.** The poll is the delivery guarantee; an operator ping accelerates but is never load-bearing.
+- **Acknowledgements carry a terminator,** so two polite chairs do not acknowledge each other forever.
+- **A relay that NAMES an action does not ASSIGN it:** execution transfers only through an explicit `action-owner`.
+
+The standing routing rule that fell out of it: work executable by the other chair's domain relays to it the same turn it surfaces, and the operator's own list holds only genuinely human judgment. Full specification: [RELAY-PROTOCOL.md](../RELAY-PROTOCOL.md).
 
 ## Running unattended
 

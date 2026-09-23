@@ -24,8 +24,9 @@ Options:
                           than answer from a stale ref)
 
 Exit 0 nothing on the ref since the start touched the files or shares the words; 1 at least one commit
-is named (read each before writing the prompt); 2 refused (no start, a failed fetch, or no file resolved
-and no title, so a clean answer would claim a check that saw nothing).
+is named (read each before writing the prompt); 2 refused (no start, a start or ref that does not resolve,
+a failed fetch or any failed git call, or no file resolved and no title, so a clean answer would claim a
+check that saw nothing). Paths may be written with either slash.
 """
 from __future__ import annotations
 
@@ -41,6 +42,14 @@ now new more one two all any not no when where which after before only also each
 
 def git(root: str, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(["git", "-C", root, *args], capture_output=True, text=True, encoding="utf-8")
+
+
+def ok_or_refuse(out: subprocess.CompletedProcess, what: str) -> str | None:
+    """The command's output, or None after printing a refusal: a failed git call is never an empty answer."""
+    if out.returncode:
+        print(f"REFUSED: {what} failed, and an empty answer would read as clean: {out.stderr.strip()}")
+        return None
+    return out.stdout
 
 
 def words(text: str) -> set[str]:
@@ -66,6 +75,9 @@ def main() -> int:
             print(f"REFUSED: the fetch failed, and a stale {args.ref} would answer wrongly: {f.stderr.strip()}")
             return 2
 
+    if git(root, "rev-parse", "--verify", "--quiet", args.ref).returncode:
+        print(f"REFUSED: {args.ref} does not resolve here")
+        return 2
     start = args.since
     if args.briefing:
         added = git(root, "log", "--first-parent", "--diff-filter=A", "--format=%H", args.ref, "--", args.briefing).stdout.split()
@@ -76,8 +88,15 @@ def main() -> int:
     if not start:
         print("REFUSED: give --briefing or --since")
         return 2
+    if git(root, "rev-parse", "--verify", "--quiet", f"{start}^{{commit}}").returncode:
+        print(f"REFUSED: the start {start} is not a commit here")
+        return 2
 
-    tree = set(git(root, "ls-tree", "-r", "--name-only", args.ref).stdout.splitlines())
+    listing = ok_or_refuse(git(root, "ls-tree", "-r", "--name-only", args.ref), f"reading {args.ref}'s tree")
+    if listing is None:
+        return 2
+    tree = set(listing.splitlines())
+    args.files = [p.replace("\\", "/") for p in args.files]
     files = [p for p in args.files if p in tree]
     for p in args.files:
         if p not in tree:
@@ -89,12 +108,18 @@ def main() -> int:
     rng = f"{start}..{args.ref}"
     named: dict[str, str] = {}
     if files:
-        for line in git(root, "log", "--first-parent", "--format=%h %s", rng, "--", *files).stdout.splitlines():
+        out = ok_or_refuse(git(root, "log", "--first-parent", "--format=%h %s", rng, "--", *files), "the files lens")
+        if out is None:
+            return 2
+        for line in out.splitlines():
             sha, _, subject = line.partition(" ")
             named[sha] = f"BY FILES: {sha} {subject}"
     if args.title:
         want = words(args.title)
-        for line in git(root, "log", "--first-parent", "--format=%h %s", rng).stdout.splitlines():
+        out = ok_or_refuse(git(root, "log", "--first-parent", "--format=%h %s", rng), "the words lens")
+        if out is None:
+            return 2
+        for line in out.splitlines():
             sha, _, subject = line.partition(" ")
             shared = want & words(subject)
             if len(shared) >= args.min_shared and sha not in named:

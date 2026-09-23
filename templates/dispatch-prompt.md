@@ -4,7 +4,7 @@ Authored by the chair (<chair session name>) on <YYYY-MM-DD> at <HH:MM> (machine
 
 ## The operator's words, verbatim (each with its receipt), and what is NOT on record
 
-- <YYYY-MM-DD HH:MMx>, drop <n> (`docs/orchestration/operator-directives/<file>.md`, line <n>; read it whole): "<the operator's sentence, exactly as written>"
+- <YYYY-MM-DD HH:MM>, drop <n> (`docs/orchestration/operator-directives/<file>.md`, line <n>; read it whole): "<the operator's sentence, exactly as written>"
 - <another receipt, same shape>
 - **NOT on record:** <the decisions the operator has not made: a pick on an open card, a name, whether to publish or send or rename>. So: <what this session therefore does not do>, and the chair carries <the one question> at the fold.
 

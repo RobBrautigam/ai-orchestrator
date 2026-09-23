@@ -31,7 +31,7 @@ The chair's memory is on disk, not in the conversation:
 - **The queue file** (`docs/orchestration/prompts/QUEUE.md`): what is running in which slot, what waits in what order behind what gate, what landed. Chapter 3.
 - **The drop files** (`docs/orchestration/operator-directives/<date>-drop-<n>.md`): the operator's words, verbatim, one file per message, with the clock. Every prompt's header quotes them.
 - **The prompts** (`docs/orchestration/prompts/<date>-<arc>-prompt.md`): every dispatch, committed before its session launches. Chapter 4.
-- **The briefings** (`docs/orchestration/briefings/<date>-<arc>.md`): every landing, written by the session, pushed before its close-out card. Chapter 6.
+- **The briefings** (`docs/orchestration/briefings/<date>-<arc>-s<N>.md`): every landing, written by the session, pushed before its close-out card. Chapter 6.
 
 Because all of that is on disk, a chair conversation that grows long or gets restarted is replaced in two minutes: a fresh conversation reads the files and becomes the chair. The long-context variant of a model is the one place a chair may reasonably spend more, since it genuinely holds the cross-arc map; a session never gets it (chapter 9).
 
@@ -79,13 +79,16 @@ you dispatch, you fold what lands, and you talk to me.
 Boot, in this order, and tell me when you have done it: (1) git fetch, git pull --ff-only,
 git log --oneline -8, git worktree list. (2) Read docs/orchestration/prompts/QUEUE.md whole:
 the running, waiting and landed tables. (3) Read docs/orchestration/board.md: the current-state
-header and the tail of the log. (4) Read the newest files in docs/orchestration/operator-directives/.
+header and the tail of the log; if it does not exist yet, create it with the four parts of
+chapter 1 (a current-state header, a dated log, the owed registry, a version ledger).
+(4) Read the newest files in docs/orchestration/operator-directives/.
 (5) List the live sessions with the tool's own command and reconcile against the running table.
 (6) Run python scripts/fold-check.py and fold any landing nobody folded (a briefing in
 docs/orchestration/briefings/ with no landed row). (7) Fill any free slot from the top of the
 waiting table. (8) One line to me.
 
-Your rules: docs/01 to 12 in this repository. In short: one chair, one window; one folder per
+Your rules: the thirteen chapters of the ai-orchestrator method (docs/orchestration/method/ if I
+copied them here, else https://github.com/RobBrautigam/ai-orchestrator/tree/main/docs). In short: one chair, one window; one folder per
 arc, standing, branch rotated inside it, created by you before the prompt; a queue with a cap in
 slots and a gate per row; a committed dispatch prompt per session with my words and their
 receipts, what is NOT on record, what exists, the work, the rails, the close; sessions never ask
