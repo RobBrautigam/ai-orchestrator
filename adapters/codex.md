@@ -1,6 +1,6 @@
 # Adapter: Codex (OpenAI Codex CLI)
 
-*Checked against OpenAI's Codex documentation (the CLI reference, the non-interactive `codex exec` page, the subagents page) on 2026-09-20. Codex has no built-in background-session supervisor equivalent to Claude Code's agent view; the chair supervises the processes itself. Where the documentation did not say, the line reads "not verified".*
+*Checked against OpenAI's Codex documentation (the CLI reference, the non-interactive `codex exec` page, the subagents page) on 2026-09-20, and against the release notes of `rust-v0.156.0` (2026-09-22) on 2026-09-23. Codex now runs a local background server and an agent command center (below); for unattended `codex exec` runs the chair still supervises the processes itself. Where the documentation did not say, the line reads "not verified".*
 
 ---
 
@@ -25,11 +25,13 @@ Notes from the documentation:
 
 ## List, watch, stop
 
-The chair keeps a small table of process ids it started and reads each run's JSONL for the last event. Stop by process id, never by image name. `codex resume` and `codex fork` operate on saved sessions from the TUI. A tmux-based supervisor (several public repositories wrap Codex this way) is the common shape when a screen per session is wanted; it is not required by this method.
+Release `rust-v0.156.0` (2026-09-22) added an **agent command center** in the interactive CLI: tasks filtered by status, worktree sessions created from it, per-task tokens and usage estimates, and tasks managed elsewhere opened as read-only history. It also added a local background server, updated through `/daemon` and bypassed with `--no-daemon`. Whether `codex exec` runs register there: not verified.
+
+For `codex exec` runs, the chair keeps a small table of process ids it started and reads each run's JSONL for the last event. Stop by process id, never by image name. `codex resume` and `codex fork` operate on saved sessions from the TUI. A tmux-based supervisor (several public repositories wrap Codex this way) is the common shape when a screen per session is wanted; it is not required by this method.
 
 ## Worktrees
 
-The chair's own `git worktree add` is the shape. In the interactive TUI, `/worktree` runs the chat in a new git worktree; whether `codex exec` has a worktree flag: not verified. Codex's documentation has a "Git worktrees" page under configuration; its exact flags were not readable at check time: not verified.
+The chair's own `git worktree add` is the shape. In the interactive TUI, `/worktree` runs the chat in a new git worktree, and since `rust-v0.156.0` worktree support is enabled by default and worktree sessions can be created from the agent command center. Whether `codex exec` has a worktree flag: not verified.
 
 ## Helper agents inside a session
 
