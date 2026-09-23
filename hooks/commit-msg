@@ -1,0 +1,28 @@
+#!/bin/sh
+# commit-msg: refuse tool attribution in a commit message.
+#
+# Optional. Install it when your policy is that an agentic coding tool is a tool the
+# author used, not a contributor. Some tools add a co-author trailer or a "generated
+# with" line to every commit by default; a rule kept in memory loses to a default the
+# tool applies every time, so the rule is kept here, at the moment of action.
+#
+# It refuses any "Co-Authored-By:" trailer (all of them, not a list of known tools,
+# because a list is what the next tool walks through) and any "Generated with" line.
+# It reads only what the author wrote: everything from git's --verbose scissors line
+# down is ignored, so a diff that quotes a trailer does not block its own commit.
+#
+# Install: copy to the path `git rev-parse --git-path hooks` prints (or your
+# core.hooksPath folder), and make it executable. Worktrees share it.
+
+msg_file="$1"
+body=$(sed '/^# ------------------------ >8 ------------------------$/,$d' "$msg_file" | grep -v '^#')
+
+if printf '%s\n' "$body" | grep -qi '^[[:space:]]*co-authored-by:'; then
+    echo "commit refused: the message carries a Co-Authored-By trailer. Take the line out and commit again." >&2
+    exit 1
+fi
+if printf '%s\n' "$body" | grep -qi 'generated with'; then
+    echo "commit refused: the message carries a \"Generated with\" line. Take the line out and commit again." >&2
+    exit 1
+fi
+exit 0

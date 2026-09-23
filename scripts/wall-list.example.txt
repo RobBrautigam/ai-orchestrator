@@ -3,7 +3,8 @@
 # Keep the REAL list outside the repository (for instance ~/wall-list.txt) and pass it with --list.
 # This example only shows the shape. Matching is case-insensitive, whole word at the front, and a
 # space matches a space, a hyphen or an underscore: "acme corp" catches "Acme Corp", "acme-corp"
-# and "acme_corp-staging".
+# and "acme_corp-staging". A line starting with = is matched literally, whole word on both sides:
+# "=acme_orders" catches the table name and lets the phrase "acme orders" through.
 #
 # What belongs on a real list: your companies and products; your clients and partners; the people
 # who appear in your private records; your domains and hostnames; database and project identifiers;
@@ -27,6 +28,10 @@ j.doe
 acme-prod-db
 acme_internal
 proj-a1b2c3d4
+
+# --- private tables and columns (literal) ---
+=acme_orders
+=acme_ledger_entries
 
 # --- key names ---
 ACME_API_TOKEN

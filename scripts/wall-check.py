@@ -12,13 +12,18 @@ any hit, 2 when it could not run. Standard library only.
 The list file: one term per line; blank lines and lines starting with # are
 ignored. Matching is case-insensitive, whole word at the front, and a space in a
 term matches a space, a hyphen or an underscore, so one line "acme corp" catches
-"Acme Corp", "acme-corp" and "acme_corp-staging". An --allow phrase is a
-verbatim exception: a hit that lies entirely inside an allowed phrase is not a
-hit (the author's own byline, for instance). A placeholder list is in
+"Acme Corp", "acme-corp" and "acme_corp-staging". A line that starts with "=" is
+matched literally instead, as a whole word on both sides with no space, hyphen or
+underscore equivalence: "=order_events" catches a table name without also
+catching the phrase "order events" in prose. An --allow phrase is a verbatim
+exception: a hit that lies entirely inside an allowed phrase is not a hit (the
+author's own byline, for instance). A placeholder list is in
 scripts/wall-list.example.txt.
 
 The built-in shapes are conservative on purpose; a false positive costs a
-minute, a leaked key costs a rotation.
+minute, a leaked key costs a rotation. "home path" catches an absolute path
+under a named user's home folder on Windows, macOS or Linux (C:\\Users\\<name>,
+/Users/<name>, /home/<name>); a path written with ~ names no user and passes.
 """
 from __future__ import annotations
 
@@ -34,7 +39,7 @@ BUILT_IN = {
     "api key shape": re.compile(r"\b(sk-[A-Za-z0-9_-]{16,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[abprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,}|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,})"),
     "long hex token": re.compile(r"\b[0-9a-f]{40,}\b", re.I),
     "slack id": re.compile(r"\b[UCTWDG](?=[A-Z0-9]*[0-9])[A-Z0-9]{8,11}\b"),
-    "private user path": re.compile(r"(?i)\b[A-Z]:[\\/]+Users[\\/]+[^\\/\s\"'`]+|/home/[a-z0-9_-]+/|/Users/[A-Za-z0-9_-]+/"),
+    "home path": re.compile(r"(?i)\b[A-Z]:[\\/]+(Users|Documents and Settings)[\\/]+[^\\/\s\"'`<>]+|(?<![A-Za-z0-9.])/(home|Users)/[A-Za-z0-9._-]+"),
     "supabase project host": re.compile(r"\b[a-z]{20}\.supabase\.(co|in)\b"),
     "railway host": re.compile(r"\b[a-z0-9-]+\.up\.railway\.app\b"),
     "env assignment with a value": re.compile(r"^\s*[A-Z][A-Z0-9_]{2,}\s*=\s*['\"]?[A-Za-z0-9+/_=.-]{12,}['\"]?\s*$", re.M),
@@ -45,6 +50,8 @@ SKIP_EXT = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".pdf", ".zip", ".
 
 
 def term_pattern(term: str) -> re.Pattern:
+    if term.startswith("="):
+        return re.compile(r"(?<![A-Za-z0-9_])" + re.escape(term[1:].strip()) + r"(?![A-Za-z0-9_])", re.I)
     parts = [re.escape(p) for p in re.split(r"\s+", term.strip()) if p]
     body = r"[\s_-]+".join(parts)
     return re.compile(r"(?<![A-Za-z0-9])" + body, re.I)
