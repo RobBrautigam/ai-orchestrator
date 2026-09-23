@@ -44,7 +44,21 @@ One paragraph: the session's name, the worktree, the branch, who created it, the
 
 ### The work, in order
 
-Numbered. Each step names its deliverable and how it is proven. The research pass comes first and is sized to the build: a small change skims the public repositories for the pattern; a page or a system gets a fuller pass with the sources and dates recorded in the briefing. Front-end work opens with several clickable mockups on real data, never one design, and one decision card for the operator's pick. Then the build, then the ship.
+Numbered. Each step names its deliverable and how it is proven. Then the build, then the ship.
+
+**The research pass comes first, and the prompt names it.** A build that starts from a blank page ignores the best work already published. The pass is sized to the build, and the prompt says which rungs to use and the spend ceiling:
+
+- a small change skims the public repositories for the pattern (the hosting site's search, sorted by stars; the last push; the license);
+- a page, a workflow or a system gets a fuller pass: the vendors' own documentation for exact command shapes, the top repositories' READMEs, practitioner threads when opinion matters, a rendered fetch for a page that needs one;
+- a metered research API is called only through the repository's own client with its cap, and the ceiling for the whole pass is written in the prompt (chapter 9, rule 6).
+
+The findings go in the briefing's section 3 with every source and its date. A session that skipped the pass says so in section 4, as a miss.
+
+**Front-end work opens with mockups, never one design:** at least three, five to ten for a page or a flow that matters, clickable, on real data, in both themes, at phone and desktop widths, with one decision card for the operator's pick. A user flow is mocked as a flow, not a screen. Anything the operator has already collected (saved components, bookmarked animations, reference sites) is searched first, and the mockups cite what they used.
+
+**The reviewer is specified, not implied.** One reviewer at the close, and the prompt says exactly what kind: a FRESH agent with its own context (never a fork of the session, which would share its blind spots), read-only, told what the repository is (public or private, and what must never appear in it), told what to hunt for, and told to echo its scope back. The session reads that scope echo against the diff and reads the reviewer's tool-use count before trusting a finding or a "clean": a reviewer that made three tool calls on a forty-file diff did not review it.
+
+**A hard stop.** A prompt for work that ends in something irreversible (a publish, a rename, a send the operator authorized) names the clock after which the session does NOT do it, and writes why instead. A session that runs long is how a half-checked thing goes public.
 
 ### The rails
 
@@ -57,6 +71,8 @@ One paragraph of prohibitions, each specific. The recurring ones:
 - the shared files (the queue, the board, the rules, the chair's own folders) read and never edited, with lines for them written into the briefing for the chair;
 - the live sessions' worktrees untouched;
 - never stop a process by image name; never elevate; never put a window on the operator's screen; kill what you start and prove it by process id;
+- a script's flags are read from its own argument handling, never from a `--help` probe (a script that does not know `--help` runs its default action; one such probe cut a release);
+- a scripted edit keeps each file's own line endings: count the carriage returns before and after, because the same edit tool writes different endings on different platforms (this repository pins LF in `.gitattributes`);
 - `git -C` and absolute paths, never `cd`; the house spelling and punctuation.
 
 A rail is written because something once went through the gap it closes. The rails paragraph is long because the list of things that went wrong is long.
@@ -71,6 +87,8 @@ The briefing file's path (the real date, the arc, the session number), its requi
 - A research step missing. The first commit of a build without one is a build from a blank page.
 - A model or effort missing from the title. The launch command must carry them and the title is where the chair checks that it did.
 - A file path that does not exist. Before launch the chair confirms every path in the prompt (`git cat-file -e origin/main:<path>` for repository paths; `test -f` for the rest).
+- Owed work that main already did. Before a prompt for an owed item is written, the chair runs [`scripts/done-on-main.py`](../scripts/done-on-main.py) (chapter 7) and reads every commit it names.
+- A reviewer left unspecified, or a research step with no ceiling where a metered call is possible.
 - A version number remembered rather than read. The chair reads the version file and the tags immediately before writing the ship line.
 - A revision delivered as a diff. Any change to a prompt, however small, re-delivers the whole file.
 

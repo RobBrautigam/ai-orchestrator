@@ -32,9 +32,15 @@ The register, by task:
 | Mechanical extraction, sweeps, fixed-schema reads | the small model, or a local model | low | half |
 | Anything the operator named a model or effort for | what they said | as asked | as above |
 
+**The operator's word overrides the register, and stays in force until they say otherwise.** When a new model lands and the operator says "use it for everything", every row above runs on it, the chair's own window included, and the register waits. Write the word down with its date and clock beside the table so the next chair does not "correct" it back.
+
+**An alias is not a model.** A short alias resolves to the newest model in its family on the day of the launch, so "opus" on Monday and "opus" on Friday may be different models with different prices. Read which model id each session actually ran on from its own usage record, and put that id, not the alias, on the effort line (chapter 6).
+
 ### 2. The cap is stated in slots, and it is the operator's word
 
-An ordinary session is one slot; a design session on the top model is two. The number is written at the top of the queue file with the date it was set, and it changes only by the operator's word (on the estate that wrote this it moved three times in two days, and each move was quoted). The cap serves two purposes: cost, and the provider's concurrent-session limit. At the cap, the first refusal from the provider is reported to the operator the same minute rather than retried; a refusal is a plan switch, never a wait.
+An ordinary session is one slot; a design session on the top model is two. The number is written at the top of the queue file with the date it was set, and it changes only by the operator's word. It moves more than you would expect: on the estate that wrote this it moved more than twenty times in four days, between two slots and thirteen, and each move was quoted with its clock. The cap serves two purposes: cost, and the provider's concurrent-session limit. At the cap, the first refusal from the provider is reported to the operator the same minute rather than retried; a refusal is a plan switch, never a wait.
+
+**Lowering the cap is a wind-down, not a stop.** When the operator lowers the cap below what is running, every running session finishes on its own and is folded as usual; a freed slot is simply not refilled while more than the new cap are busy. Once the count is at the new cap, it holds there and every freed slot is refilled as before. Stopping a working session to meet a new cap wastes the work it has done and is never what "fewer slots" means.
 
 ### 3. Never a long-context variant in the background
 
@@ -74,3 +80,9 @@ A trial that reports "40 percent fewer tokens" and not "the same task done, revi
 ## The effort experiment
 
 The default effort is re-set on data, not on opinion. The shape: two sessions of about the same kind (research and measure; an audit; a sweep) launched the same hour on the same model, one at `high` and one at the top effort, neither told to behave differently. At each fold the chair records tokens moved, wall time, the reviewer's findings, metered spend, and defects found later (a wrong fact, a page the chair had to fix, a follow-up session the miss caused). The reading, in plain words: what each level cost, what each produced, and whether the extra bought anything a reader can see. The first pair on the estate that wrote this: same wall time; the top effort moved about 58 percent more context and produced about 44 percent more output; both delivered every asked item and both caught a wrong number of their own before publishing it. Defects found later are still being filled in, and the default has not moved until they are.
+
+The bar for moving it is the operator's, and on that estate it reads: **no savings bought with lower-quality output.** A cheaper setting earns the default only when the matched pairs show the same work done with the same defect count. Until then the default stays at the top effort, and every launch still names it.
+
+### 10. A long-context model in the chair's own window is a choice, stated
+
+The one conversation that holds the cross-arc map may run on a long-context variant, because it genuinely reads more than any session. It is still a cost decision made out loud, re-examined when the chair's turns grow slow or its allowance runs short, and it never spreads to a background session by inheritance: every background launch names its own model (rule 1).

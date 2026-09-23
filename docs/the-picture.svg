@@ -149,12 +149,12 @@
     <rect class="card card-chair" width="220" height="150"/>
     <rect class="numbg-chair" x="0" y="0" width="28" height="24" rx="6"/><text class="num" x="9" y="17">9</text>
     <text class="title" x="40" y="18">The fold</text>
-    <text class="cap" x="14" y="46">The chair reads the FILE, never</text>
-    <text class="cap" x="14" y="62">the chat. Close test: card up, PR</text>
-    <text class="cap" x="14" y="78">merged, deploy verified. Writes</text>
-    <text class="cap" x="14" y="94">the landed row in plain English,</text>
-    <text class="cap" x="14" y="110">stops the session by id the same</text>
-    <text class="cap" x="14" y="126">minute.</text>
+    <text class="cap" x="14" y="46">Within ten minutes of the card,</text>
+    <text class="cap" x="14" y="62">from the FILE, never the chat; a</text>
+    <text class="cap" x="14" y="78">fold check catches what a long</text>
+    <text class="cap" x="14" y="94">turn missed. Close test, landed</text>
+    <text class="cap" x="14" y="110">row in plain English, session</text>
+    <text class="cap" x="14" y="126">stopped by id the same minute.</text>
     <text class="who who-chair" x="14" y="144">ON THE CHAIR</text>
   </g>
 
@@ -178,7 +178,7 @@
     <text class="cap" x="16" y="52">Every line names who moves next: "on me" (the chair, with the when) or "on you" (the operator, with the link and the</text>
     <text class="cap" x="16" y="68">under-two-minute action). An anchor emoji opens each line so the eye lands without reading:</text>
     <text class="cap" x="16" y="94">✅ done and verified    🚀 launched, with model and slot    ⏳ waiting on a session    🤖 on me    🫵 on you    ❓ the one question</text>
-    <text class="cap" x="16" y="118">Every ask links the record itself, never the page it sits on. At most one question per message. Under about 250 words.</text>
+    <text class="cap" x="16" y="118">One question per message, in the LAST message of the turn, linking the record itself. Under about 250 words.</text>
     <text class="cap" x="16" y="138">Between two operator messages the full picture is sent at most once; after that, one line or nothing.</text>
   </g>
 

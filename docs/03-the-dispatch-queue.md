@@ -7,7 +7,7 @@
 ## Words
 
 - **Slot.** One unit of the cap. An ordinary session takes one; a design session (the model at its most expensive setting, doing look-and-feel work) takes two. The cap is stated in slots, not sessions.
-- **Cap.** The number of slots that may be busy at once. It is the operator's word and is written at the top of the file with the date it was set. It is a cost decision and a shared-limit decision (chapter 9): at the cap the fleet stays inside the account's concurrent-session limit, and the first refusal from the provider is reported to the operator the same minute rather than retried.
+- **Cap.** The number of slots that may be busy at once. It is the operator's word and is written at the top of the file with the date and clock it was set, and the word before it is kept underneath for the record. It is a cost decision and a shared-limit decision (chapter 9): at the cap the fleet stays inside the account's concurrent-session limit, and the first refusal from the provider is reported to the operator the same minute rather than retried. When the operator lowers it, the fleet winds down: running sessions finish, and freed slots are not refilled until the count is under the new cap.
 - **Badge.** The number a row gets when it joins the queue, kept for life, so the board, the chat and the operator can point at it ("badge 28"). It is not a rank; the rank is the row's position.
 - **Gate.** What a waiting row needs before it may launch: nothing; another arc's landing; a card the operator has not answered; data that is not fresh yet. A row with an open gate never launches, however free the slots.
 - **READY.** A waiting row whose prompt is authored and whose gate is open. The tick launches READY rows top-first.

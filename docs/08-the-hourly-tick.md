@@ -10,14 +10,14 @@ Landings are event-driven (chapter 7): the chair folds a session the minute its 
 
 ## The twelve steps
 
-1. **Sync.** `git fetch origin main`; read the commits since the last tick; list the worktrees.
+1. **Sync, then the fold check.** `git fetch origin main`; read the commits since the last tick; list the worktrees; run the fold check (chapter 7, [`scripts/fold-check.py`](../scripts/fold-check.py)) and handle what it names before anything else.
 2. **List the live sessions** with the tool's own command. Reconcile against the running table: every running row has a live session; every live session has a running row. A mismatch is written down before it is fixed.
 3. **Find the stalls.** For each running session, read its state and its last output. Done with a card up: fold it (chapter 7). Idle with no card: read the last line. A provider refusal (a concurrent-session limit, a rate limit) is a plan switch or a re-queue, never a wait. A progress note or a question with the turn ended: answer it the same minute ("carry on; record the question in section 7"). Waiting on a permission nobody can answer: stop it by id, fix the launch shape, re-queue.
 4. **Fold the landings** nobody folded: a briefing file on main with no landed row.
 5. **Refill the slots.** Re-read the gates on the waiting table (a card answered, an arc landed, a date passed); move the un-gated rows to READY; launch top-first until the cap.
 6. **Run the census** (chapter 10): resident sessions, helper processes, orphans. Stop the orphans that pass the four-part proof, by id, and log each. Put the three counts on the board beside the running table.
 7. **Check the shared configuration** the sessions load (the rules, the skills, the hooks), read-only: is it on main, level with the remote, clean. A finding is fixed the same day on a branch with a pull request, never raised with the operator.
-8. **Re-read the operator's open questions.** Anything answered in chat since the last tick is settled on its record the same turn. Anything asked three times moves from chat to the standing list the operator can open at any hour, and is not asked in chat again.
+8. **Re-read the operator's open questions, and every inbound message.** Anything answered in chat since the last tick is settled on its record the same turn. Anything asked three times moves from chat to the standing list the operator can open at any hour, and is not asked in chat again. Where the operator can also reach the chair through a second channel (a chat bot on their phone, an email alias), every message that came in that way is listed until the chair's own record acknowledges it by id; an item a bot filed on its own is not the chair having read it.
 9. **Re-check the standing rails** that have a mechanical test: no scheduled task or startup entry the operator did not name; no session on a long-context model; every running row with a model and effort filled in.
 10. **Rewrite the at-a-glance line** in the queue file with the clock.
 11. **Commit** the queue file and the board, on main.

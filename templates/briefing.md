@@ -109,7 +109,16 @@ PRODUCED: <named block with exact names and values, or NONE>. CONSUMED: <named c
 
 ## 11. Merge target and gate
 
-Merged to `main` through PR [#<n>](<url>) at <clock>, squashed to `<sha>`, deployed as <x.y.z> and verified live. The gate: <tests>, <the reviewer with its findings fixed>, <the walk>, <the probe>.
+Merged to `main` through PR [#<n>](<url>) at <clock>, squashed to `<sha>`, deployed as <x.y.z> and verified live. The gate: <tests>, <the walk>, <the probe>, and the reviewer:
+
+| | |
+|---|---|
+| Form | a fresh agent, never a fork; read-only; <model> |
+| Tool uses | <n> |
+| Scope echo | <what it said it read>, against the diff: <all of it | the gap> |
+| Findings | <n>, each below with what was done |
+
+- <finding 1>: <fixed in sha7 | answered: why no change>
 
 ---
 

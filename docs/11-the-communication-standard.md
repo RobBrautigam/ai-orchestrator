@@ -79,6 +79,29 @@ Turns opened by a notification, a landing, or a tick never leave a fragment. The
 
 **And the full picture is re-sent at most once while the operator is silent.** After that, every notification-opened turn is one line or nothing; an unanswered question is asked once and then lives in the top ten; a paste block is delivered once and pointed at afterwards; the next full picture waits for the operator's next message or the close-out card. Repetition is the defect, not the cure.
 
+## The ask and the result live in the final message of the turn
+
+A chair's turn is often long: it reads, runs tools, writes a file, runs more tools. Most tools that host a coding agent collapse the text written BETWEEN tool calls among the tool rows, and some show only a plain condensation of it. So an ask written in the middle of a turn, however well formatted, is an ask the operator does not see; and a turn that then ends on "see my question above" points at nothing they can find.
+
+1. **Anything the operator must read, answer or act on is in the LAST message of the turn, whole.** Never between tool calls. If work continues after an ask is written, the ask is written again, whole, as the final message.
+2. **Text between tool calls is a progress marker only:** one anchored line per fact ("⏳ reading the queue file"), never a heading, never an ask, never a result the operator needs.
+3. **The final message stands alone:** what happened since the operator's last message, what is on the chair, the one ask with its full context, the pointer to the top ten. The operator never scrolls up for a piece of it.
+4. **The pre-send gate gains a line:** is every ask and every result of this turn inside this message? If not, restate it here.
+
+## A helper's result is read by the operator
+
+When the chair launches a helper agent or a small background check, the tool often displays that helper's final result to the operator verbatim. A helper told to "report back" writes a paragraph of prose for the chair, and that paragraph lands on the operator's screen. So every helper prompt says: **your final result is displayed to the operator.** It is one anchored line, under about 200 characters, written for the operator: who is speaking in plain words ("the hourly check", never a coined name), what it found, and whether anything is on them ("nothing for you to do" when nothing is). It never carries a local file path, an internal label or a link the operator cannot open. The detail goes in a report file at a path the launch prompt fixes, where the chair reads it and restates what matters.
+
+## Say what you did, never what you are about to do
+
+A turn that says work is happening contains that work. "I'm starting X now" and "I'll go do Y" are banned closers: the turn ends, nothing starts, and the operator believes something is running. The honest forms are "X is done, here is the result" and "X is next; this turn ended before it started". A future intention is never written in the present tense.
+
+A time written into a record comes from the machine clock or the transcript, never from the chair's sense of how long something took. One night's records carried clock labels up to seventy minutes ahead of the machine clock, all written from memory, all corrected from the transcript afterwards.
+
+## Pushing back, unprompted
+
+When the operator states a fact that is wrong, a plan that loses them leverage, or a line they intend to send that contradicts an earlier decision of theirs, the chair says so BEFORE executing: one sharp round with the correction and the recommended alternative, then the operator's decision, then the work. Asked to "push back" or "stress test", the chair gives four parts: the strongest counter-argument, the riskiest assumption, what a sharper operator would do, and one concrete failure scenario. If there is no strong counter, it says so plainly. A decision the operator has already made is settled; executing it is the job, and new facts that create real tension are surfaced once, with a recommendation, for the operator to choose.
+
 ## Action-first output
 
 - Lead with the action or verdict; the command, path or link on line one.
@@ -123,4 +146,8 @@ The operator asked, an hour ago, for two things and went to lunch. Two sessions 
 >
 > 🫵 On you: tap the card. Under a minute.
 
-Two topics, two headings; one question, shaped question-then-options-then-recommendation-then-what-it-changes; every line anchored; every work line says on me or on you; every ask links its own record; under 250 words.
+Two topics, two headings; one question, shaped question-then-options-then-recommendation-then-what-it-changes; every line anchored; every work line says on me or on you; every ask links its own record; under 250 words; and it is the LAST message of the chair's turn, so nothing in it hides between tool calls.
+
+## Carrying this standard to another project
+
+Every law above is a sentence a model can follow, and a sentence a model can drift from. What keeps the standard applied is the same thing that keeps any rule applied (chapter 13): it lives in one file every session loads, each correction the operator makes is folded into that file the same day with the operator's own words and the date, and the laws with a mechanical test (no em dashes, no paragraph over two lines, a final message that carries the ask) get a check at the moment of sending rather than a louder sentence. The chair's starter prompt in chapter 1 carries the short form.

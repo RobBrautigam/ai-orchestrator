@@ -13,6 +13,17 @@ Two signals, either one starts a fold:
 
 The first is the completion signal proper; the second is the earlier one. The chair watches both: the tick fetches main and lists sessions every hour, and a notification hook (where the tool has one) wakes the chair when a session finishes or needs input.
 
+## The ten-minute fold law, and the check that enforces it
+
+**A fold is owed within ten minutes of the close-out card.** That sounds like a promise; it is written as a check because the promise failed. Notifications and the hourly tick both arrive BETWEEN the chair's turns, so the chair is blind for exactly as long as its longest turn. Measured: a finished session read "running" for twenty-five minutes while the chair answered nine operator messages inside one turn, and in the same window two more sessions closed and a fourth stopped on a network error. Nothing was wrong with any session; the chair simply never looked up.
+
+1. **A chair turn that runs past ten minutes runs the fold check before it takes each new ask**, and handles what it names before the ask.
+2. **The fold check is the first step of every tick** (chapter 8) and the first command of any turn a notification opened.
+3. **The final message of a turn over ten minutes states the check's result in one line**: "every running session is working", or what was found and what was done about it.
+4. **The check is read-only and fast** (seconds, not minutes), so running it too often costs nothing and running it too rarely is the whole failure.
+
+This repository's generic version is [`scripts/fold-check.py`](../scripts/fold-check.py). It reads the queue file's running table and the briefings folder on `origin/main`, and optionally the tool's own session list as JSON, and names every session that owes the chair something: a fold (the briefing landed and the row still holds a slot), a stale row, a folded session still resident, a session that ended without a card, one that needs input, one the tool no longer lists, and one the table does not know about. It prints "all clear" when nothing is owed. `python scripts/selftest.py` proves it on a toy repository. Where the tool can run a command on every operator message (a prompt-submit hook), wiring the check into it puts the list in front of the chair at the one moment a signal does reach it mid-turn.
+
 ## The close test
 
 Before anything is written, four checks, every time:
@@ -52,6 +63,8 @@ When `READ:` fails, in order, and the operator is asked only at the last rung:
 ## Re-sync before every triage
 
 Sessions merge on their own schedule. Before folding anything, the chair fetches main and reads the new commits: a merge with no briefing yet is still a landing to record, and a task another arc already shipped is not dispatched again. **Validate the task is still outstanding before dispatching**; a session's own handoff can be stale by the time it is read.
+
+That validation is a check, not a feeling. Twice in one day on the estate that wrote this, the chair dispatched an owed item whose work main had already done: once all three items had been fixed by two merges before the prompt was written, once four of five. Both sessions spent their first hour rediscovering it. [`scripts/done-on-main.py`](../scripts/done-on-main.py) is the check: given the briefing the item came from (or a start commit), the files it names and its title, it lists every commit on `origin/main` since then that touched those files, and every commit whose subject shares the title's uncommon words (a fix can land in a file the item never named). Exit 0 means nothing moved; exit 1 means read each named commit before writing the prompt. It refuses rather than answer from a failed fetch, and refuses rather than report "clean" when none of the files resolved, because a clean answer from a check that saw nothing is worse than no answer.
 
 ## Validate before you relay
 

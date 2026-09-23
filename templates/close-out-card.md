@@ -1,32 +1,32 @@
-# <arc> session <N>: <the outcome in one plain-English sentence>
+# 🚢 <arc> session <N>: <the outcome in one plain-English sentence>
 
-## What we accomplished
+## ✅ What we accomplished
 
 - <what the operator can now see, do, or stop worrying about; one idea per line>
 - <another; plain English; the try-it form where there is one: "refunds show on the statement the same day: open /account/statement">
 - <another>
 
-## Needs you
+## 🔴 Needs you
 
 1. **<The one question, in full.>** What it is in plain words; what is wrong today; what will be done on each answer; what changes for you afterwards; the risk and how it is reversed. **Recommended:** <option>, because <one line>. **Alternative:** <option>, if <condition>. Answer to the CHAIR: this session is over. <link to the record itself>
 
-## Watch
+## ⚠️ Watch
 
 - <anything on fire, degraded, or deliberately left unfinished, with who moves it next>
 
-## Where things stand
+## 📍 Where things stand
 
 - Repository `<name>`, branch `<branch>`, version `<x.y.z>`.
 - Pull request #<n>: <merged as sha7 | open | draft>.
 - Deploy: <verified live at <url> | not verified: <why> | none owed (documents only)>.
 - Everything started by this session is stopped, by process id; the table is in the briefing's section 10.
 
-## Next
+## 🧭 Next
 
 1. <what the chair dispatches next, or what the operator does, one line each>
 2. <...>
 
-## Orchestrator briefing
+## 📋 Orchestrator briefing
 
 Copy this block to the chair (or let the chair find the file on main).
 

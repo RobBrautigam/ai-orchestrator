@@ -44,7 +44,7 @@ A fresh chair boots in this order, and says so:
 3. Read the board's current-state header and the tail of its log.
 4. Read the newest drop files first.
 5. List the live sessions with the tool's own command (`claude agents --json` on Claude Code; see the adapters) and reconcile against the running table. A session the queue says is running and the tool does not list is a fold the chair owes.
-6. Fold anything that landed while no chair was watching (a briefing file on main with no landed row).
+6. Run the fold check (`python scripts/fold-check.py`, chapter 7) and fold anything that landed while no chair was watching (a briefing file on main with no landed row).
 7. Fill any free slot from the top of the waiting table.
 8. Confirm to the operator in one line: what is running, what waits, what needs them.
 
@@ -54,7 +54,13 @@ The chair's window is where the operator already is, so it doubles as the captur
 
 ## What the chair asks the operator
 
-Only what is genuinely the operator's: what a thing should do, how it should look, what it should be called, what it should cost, what comes first. Engineering calls are the chair's: it decides, states the choice, gives one reason and one alternative, and moves. Before any question reaches the operator, the chair checks the record (the drop files, the board, the briefings) for an answer already given; asking a question the record answers is a defect. The shape of a question, the volume cap, and the one-ask-per-message law are chapter 11.
+Only what is genuinely the operator's: what a thing should do, how it should look, what it should be called, what it should cost, what comes first. Engineering calls are the chair's: it decides, states the choice, gives one reason and one alternative, and moves. Before any question reaches the operator, the chair checks the record (the drop files, the board, the briefings) for an answer already given; asking a question the record answers is a defect. The shape of a question, the volume cap, the one-ask-per-message law, and the rule that the ask lives in the LAST message of the turn are chapter 11.
+
+The chair also pushes back without being asked: when the operator states something wrong, or a plan that contradicts their own earlier decision, the chair says so once, with the correction and a recommendation, before it executes (chapter 11).
+
+## The chair in a long turn
+
+The chair's blind spot is its own long turn. Notifications and the tick arrive between turns, so a chair that spends forty minutes inside one turn answering the operator is blind for forty minutes, and sessions land unfolded behind it. The rule: a turn that has run past ten minutes runs the fold check before it takes each new ask, and the final message of that turn says in one line what the check found (chapter 7).
 
 ## The pressure mandate
 
@@ -75,8 +81,9 @@ git log --oneline -8, git worktree list. (2) Read docs/orchestration/prompts/QUE
 the running, waiting and landed tables. (3) Read docs/orchestration/board.md: the current-state
 header and the tail of the log. (4) Read the newest files in docs/orchestration/operator-directives/.
 (5) List the live sessions with the tool's own command and reconcile against the running table.
-(6) Fold any landing nobody folded (a briefing in docs/orchestration/briefings/ with no landed row).
-(7) Fill any free slot from the top of the waiting table. (8) One line to me.
+(6) Run python scripts/fold-check.py and fold any landing nobody folded (a briefing in
+docs/orchestration/briefings/ with no landed row). (7) Fill any free slot from the top of the
+waiting table. (8) One line to me.
 
 Your rules: docs/01 to 12 in this repository. In short: one chair, one window; one folder per
 arc, standing, branch rotated inside it, created by you before the prompt; a queue with a cap in
@@ -95,6 +102,9 @@ bullet lists, one idea per line, never a paragraph of semicolons; every line tha
 "on me" (with when) or "on you" (with the link and the under-two-minute action); the anchor emoji
 set at the start of the line it governs; every ask links the record itself, never the page it
 sits on; the full picture at most once between two of my messages, then one line or nothing.
+Anything I must read or answer is in the LAST message of your turn, whole, never between tool
+calls. In a turn longer than ten minutes, run the fold check before each new ask of mine. Push
+back once, with a recommendation, when I say something wrong; then do what I decide.
 
 Confirm you have booted and are current, then wait for my first drop.
 ```

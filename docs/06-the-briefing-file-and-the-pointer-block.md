@@ -24,7 +24,7 @@ Every briefing has all eleven, in this order, with the number in the heading. `N
 8. **Owed and deferred.** Bullets, each with the trigger that should resurface it.
 9. **Recommendation.** What should happen next with this arc, ranked, one line of why each.
 10. **Contracts, and what this session started.** Contracts produced (exact names and values another arc builds against, copy-paste ready) and consumed; the table of every process this session started, with its id, its command line, and what stopped it.
-11. **Merge target and gate.** The pull request, the target branch, the gate that was passed (tests, the reviewer, the walk, the probe), what deploys and what does not.
+11. **Merge target and gate.** The pull request, the target branch, the gate that was passed (tests, the reviewer, the walk, the probe), what deploys and what does not. The reviewer is written down in full: its kind (a fresh agent, never a fork), its model, its tool-use count, its scope echo read against the diff, and every finding with what was done about it.
 
 After the eleven: **the loose-ends table**, one row per line of the prompt's work, rails and close, each tagged done, partial (with the gap named), queued (with where), spun off, or dropped (said so).
 
@@ -36,7 +36,7 @@ Section 2 carries one fixed-shape line filled from the tool's own usage record, 
 EFFORT | <session kind> | model <m> | effort <e> | session <id> | started <iso> | tokens_input <n> | tokens_output <n> | cache_read <n> | cache_write <n> | reviewer_findings <n> | subagents <n> | metered_spend $<n>
 ```
 
-On the estate that wrote this, the line fed a running experiment comparing two effort levels on matched pairs of sessions; chapter 9 has the shape.
+On the estate that wrote this, the line fed a running experiment comparing two effort levels on matched pairs of sessions; chapter 9 has the shape. The model on the line is the id the session actually ran on, read from its usage record, never the alias it was launched with (an alias moves when a new model lands). When the numbers come from a table the session reads, it prints the table's column names first and fills the line from them, so a renamed column fails loudly instead of filling the line with the wrong number.
 
 ## The completeness gate
 

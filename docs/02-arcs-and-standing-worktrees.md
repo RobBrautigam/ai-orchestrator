@@ -44,6 +44,19 @@ You cannot check out `main` itself inside a worktree (the main checkout holds it
 
 Before any branch operation in a standing worktree, the chair checks whether a session is live in it (the tool's session list, and the working tree's file times). Rotating under a live session is the concurrent-use defect by another route.
 
+### Rotation as one command, with its refusals and its proof
+
+Typed by hand at every launch, the rotation drifts. The estate that wrote this found, in one sweep, ten worktrees that ran **no commit hook at all**: the repository's hooks lived in a folder its package manager generates at install time and the repository ignores, so the folder existed in the main checkout and in no worktree where the install never ran. Git found no hook and ran none, silently, for weeks. A second trap sat inside the fix: installing the hook folder into a branch whose pre-commit hook called a tool that branch had not installed would have refused every commit there.
+
+So the rotation is one command, [`scripts/rotate-worktree.py`](../scripts/rotate-worktree.py), and it:
+
+1. **Refuses** (exit 2, nothing changed) the main checkout; a folder that is not the top of a worktree; uncommitted tracked changes; a file written in the last ten minutes unless the chair says it checked the session list (`--not-live`); and a branch that already holds commits on no remote branch, which a reset would strand.
+2. Fetches and runs `git checkout -q -B <branch> origin/main`.
+3. Copies `.env` and its siblings from the main checkout when the worktree lacks them AND git ignores them (a copy that would show as work is refused), never printing their contents.
+4. **Ends on a proof:** the commit-msg hook git would run in that worktree accepts an honest message and refuses a message carrying the trailer the policy forbids (through `git hook run`). No hook at all is said plainly, and `--require-hook` makes it a failure.
+
+The same shape works for any other hook a repository depends on. The lesson generalizes beyond hooks: **a folder the repository ignores is a folder a worktree does not have.**
+
 ## Who does what
 
 | Action | Who |
