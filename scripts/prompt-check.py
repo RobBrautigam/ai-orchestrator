@@ -66,15 +66,18 @@ GLUE = {"the", "in", "within", "after", "by", "at", "of", "about", "under", "ove
 DONE_RE = re.compile(r"^\s*(?:[-*+]\s+|\d+[.)]\s+|#+\s+)?(?:\*\*|__)?DONE MEANS(?:\*\*|__)?\s*:(?:\*\*|__)?(.*)$")
 LIST_ITEM_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+(.*)$")
 HARD_RE = re.compile(r"HARD STOP", re.I)
-SPAN_RE = re.compile(r"(\d+(?:\.\d+)?|[a-z]+(?:-[a-z]+)?(?: and a half)?)\s*(minutes?|mins?|hours?|hrs?|h|m)\b\s+after\s+(?:the\s+)?launch", re.I)
+# The half sits before the unit ("two and a half hours") or after it ("an hour and a half"); both read.
+SPAN_RE = re.compile(r"(\d+(?:\.\d+)?|[a-z]+(?:-[a-z]+)?(?: and a half)?)\s*(minutes?|mins?|hours?|hrs?|h|m)\b(\s+and\s+a\s+half)?\s+after\s+(?:the\s+)?launch", re.I)
 # am, pm, UTC and GMT in any case; a zone abbreviation (EST, CEST) only in capitals, so "17:30 that day" stays a clock.
 CLOCK_RE = re.compile(r"(?<![\d:])([01]?\d|2[0-3]):([0-5]\d)(?![\d:])(\s*(?:(?i:a\.?m\.?|p\.?m\.?|utc|gmt)|[A-Z]{1,3}T)(?![A-Za-z]))?")
-EXPECTED_RE = re.compile(r"\bEXPECTED\s*:?\s*(\d+(?:\.\d+)?|[a-z]+(?:-[a-z]+)?(?: and a half)?)\s*(minutes?|mins?|hours?|hrs?|h|m)\b", re.I)
+EXPECTED_RE = re.compile(r"\bEXPECTED\s*:?\s*(\d+(?:\.\d+)?|[a-z]+(?:-[a-z]+)?(?: and a half)?)\s*(minutes?|mins?|hours?|hrs?|h|m)\b(\s+and\s+a\s+half)?", re.I)
 ASK_RES = [
     re.compile(r"\bask\b[^.;\n]{0,40}?\b(?:if|when|whether)\b[^.;\n]{0,24}?\b(?:unclear|unsure|in doubt|ambiguous|needed|necessary)\b", re.I),
     re.compile(r"\b(?:ask|check with|confirm with)\s+(?:the\s+)?(?:operator|me|user|human|owner)\b", re.I),
 ]
-NEGATION_RE = re.compile(r"\b(?:never|not|don't|do not|no|nor|without)\b[^.;\n]{0,24}$", re.I)
+# A negation counts only when it governs the ask itself ("never ask", "do not stop to ask"). "If you are not
+# sure, ask the operator" and "do not hesitate to ask the operator" are asks, and are refused.
+NEGATION_RE = re.compile(r"\b(?:never|not|don't|do not|no need to|nor)\s+(?:(?:stop|pause|wait|need|have)\s+(?:to\s+)?)?$", re.I)
 PATH_TOKEN_RE = re.compile(r"`([^`\s<>]+)`")
 
 
@@ -153,10 +156,11 @@ def read_done_line(head: list[str], body: list[str]) -> tuple[bool, str]:
     return False, "no DONE MEANS line in the body: name the observable state that ends the work"
 
 
-def to_minutes(amount: str, unit: str) -> float | None:
+def to_minutes(amount: str, unit: str, half_after: str | None = None) -> float | None:
     amount = amount.lower().strip()
-    half = amount.endswith(" and a half")
-    if half:
+    half = bool(half_after)
+    if amount.endswith(" and a half"):
+        half = True
         amount = amount[: -len(" and a half")]
     if re.fullmatch(r"\d+(?:\.\d+)?", amount):
         n = float(amount)
@@ -170,19 +174,32 @@ def to_minutes(amount: str, unit: str) -> float | None:
 
 
 def hard_stop(body: list[str]) -> tuple[bool, str, dict]:
-    for _, line, inside in unfenced(body):
-        if inside:
-            continue
-        m = HARD_RE.search(line)
-        if not m:
-            continue
+    """The HARD STOP line, read. Lines with HARD STOP in capitals are tried first (prose such as "before the hard
+    stop" is not the line); the first that reads wins, and a clock with am, pm or a zone anywhere is refused."""
+    lines = [line for _, line, inside in unfenced(body) if not inside and HARD_RE.search(line)]
+    if not lines:
+        return False, "no HARD STOP in the body: name the outer bound (\"HARD STOP: 120 minutes after launch\")", {}
+    capitals = [line for line in lines if "HARD STOP" in line]
+    tried = [stop_line(line) for line in (capitals or lines)]
+    for ok, text, found in tried:
+        if not ok and "am, pm or a zone" in text:
+            return ok, text, found
+    for result in tried:
+        if result[0]:
+            return result
+    return tried[0]
+
+
+def stop_line(line: str) -> tuple[bool, str, dict]:
+    m = HARD_RE.search(line)
+    if m:
         rest = line[m.end():]
         cut = re.search(r"[.;](\s|$)", rest)
         clause = rest[: cut.start()] if cut else rest
         found: dict = {}
         span = SPAN_RE.search(clause)
         if span:
-            minutes = to_minutes(span.group(1), span.group(2))
+            minutes = to_minutes(span.group(1), span.group(2), span.group(3))
             if minutes is None:
                 return False, f"a HARD STOP whose length cannot be read: {line.strip()}", {}
             found["minutes_after_launch"] = minutes
@@ -201,7 +218,7 @@ def hard_stop(body: list[str]) -> tuple[bool, str, dict]:
         if "clock" in found:
             parts.append(f"at {found['clock']}")
         return True, " or ".join(parts) + (" (whichever is first)" if len(parts) > 1 else ""), found
-    return False, "no HARD STOP in the body: name the outer bound (\"HARD STOP: 120 minutes after launch\")", {}
+    return False, f"a HARD STOP with no time that can be read: {line.strip()}", {}
 
 
 def expected(body: list[str]) -> float | None:
@@ -210,7 +227,7 @@ def expected(body: list[str]) -> float | None:
             continue
         m = EXPECTED_RE.search(line)
         if m:
-            return to_minutes(m.group(1), m.group(2))
+            return to_minutes(m.group(1), m.group(2), m.group(3))
     return None
 
 
@@ -275,6 +292,8 @@ def check(path: str, root: str, ref: str, paths: bool) -> dict:
         result["ok"].append(f"EXPECTED: {exp:g} minutes")
         if stop.get("minutes_after_launch") is not None and exp > stop["minutes_after_launch"]:
             result["refused"].append(f"EXPECTED ({exp:g} minutes) is past the HARD STOP ({stop['minutes_after_launch']:g} minutes)")
+        elif stop.get("clock") and stop.get("minutes_after_launch") is None:
+            result["notes"].append("EXPECTED is in minutes and the HARD STOP is a clock: compare the two at the launch, when the clock is known")
     for line in asks(body):
         result["refused"].append(f"the body tells the session to ask; nobody is at its keyboard: {line[:160]}")
     if paths:

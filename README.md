@@ -20,11 +20,11 @@ The commands below are POSIX shell: on Windows run them in Git Bash, and on macO
    python scripts/selftest.py
    ```
 
-   Thirty-nine checks run against a toy repository built in a temporary folder: a queue, a worktree, a landed briefing, the fold check naming it (and naming a session past its hard stop), the worktree rotation refusing the unsafe cases, the prompt check refusing a prompt with no definition of done, the fold lines read the way the fold reads them, and the publish gate catching a planted private name, email and home path, in a file, a staged commit and a commit message. Your own git configuration is shut out and never touched. The folder is deleted at the end (`--keep` leaves it for you to look at). It takes under two minutes on Windows, where git starts slowly, and ends:
+   Forty-seven checks run against a toy repository built in a temporary folder: a queue, a worktree, a landed briefing, the fold check naming it (and naming a session past its hard stop), the worktree rotation refusing the unsafe cases, the prompt check refusing a prompt with no definition of done, the fold lines read the way the fold reads them, the publish gate catching a planted private name, email and home path in the tree, and a listed name in a staged commit, a commit message and a pull request body. Your own git configuration is shut out and never touched. The folder is deleted at the end (`--keep` leaves it for you to look at). It takes about two minutes on Windows, where git starts slowly, and ends:
 
    ```
-   PASS 39: wall-check catches a listed name in a pull request body before it is posted
-   selftest: 39 of 39 checks passed
+   PASS 47: both hooks are committed executable (mode 100755), so git runs them on Linux and macOS
+   selftest: 47 of 47 checks passed
    ```
 
 2. **Copy the kit into your repository:**
@@ -42,6 +42,7 @@ The commands below are POSIX shell: on Windows run them in Git Bash, and on macO
 
    ```
    cp /path/to/ai-orchestrator/hooks/pre-commit "$(git rev-parse --git-path hooks)/pre-commit"
+   chmod +x "$(git rev-parse --git-path hooks)/pre-commit"
    git config wallcheck.list ~/wall-list.txt
    ```
 
@@ -68,7 +69,7 @@ Your tool's exact commands are in [adapters/](adapters/). The rest of this page 
 
 ## What's new in 2.2
 
-Four more rules that kept being broken became checks, each with its selftest and each seen to fail on a deliberately broken copy (all fourteen breaks caught). The full list, with the why for each, is in the [changelog](CHANGELOG.md).
+Four more rules that kept being broken became checks, each with its selftest, and [`scripts/mutation-pass.py`](scripts/mutation-pass.py) now ships, so anyone can break 22 guards one at a time in a copy and see which, if any, the selftest misses. The full list, with the why for each, is in the [changelog](CHANGELOG.md).
 
 1. **The fold lines.** A briefing ends with one fenced block the chair copies from: the result, the board line, effort, findings, spend, every owed item with its band and owner, every carried row. [`scripts/fold-lines.py`](scripts/fold-lines.py) reads it the way the fold will. ([Chapter 6](docs/06-the-briefing-file-and-the-pointer-block.md#the-fold-lines-the-part-of-the-file-the-chair-folds-from).)
 2. **The prompt check, before every launch.** [`scripts/prompt-check.py`](scripts/prompt-check.py) refuses a prompt with no `DONE MEANS` line in the body the session receives, no readable `HARD STOP`, an instruction to ask somebody, or a read-first path that does not exist. ([Chapter 4](docs/04-the-dispatch-prompt.md#what-makes-a-prompt-incomplete).)
@@ -169,7 +170,7 @@ The rule that does not change per tool: **every launch names its model and its e
 
 ## The scripts: rules turned into checks
 
-Standard library Python, no dependencies, each proven by [`scripts/selftest.py`](scripts/selftest.py) on a toy repository (and each seen to fail it when deliberately broken). Each one refuses, or says "could not check", rather than report clean from a check that saw nothing.
+Standard library Python, no dependencies, each proven by [`scripts/selftest.py`](scripts/selftest.py) on a toy repository (and [`scripts/mutation-pass.py`](scripts/mutation-pass.py) breaks their guards in a copy, one at a time, to show the selftest fails when they do). Each one refuses, or says "could not check", rather than report clean from a check that saw nothing.
 
 | Script | What it checks | Chapter |
 |---|---|---|
@@ -179,6 +180,7 @@ Standard library Python, no dependencies, each proven by [`scripts/selftest.py`]
 | [`scripts/rotate-worktree.py`](scripts/rotate-worktree.py) | Rotates a standing worktree onto a fresh branch, refusing the unsafe cases, and proves the commit hook runs there | 2 |
 | [`scripts/done-on-main.py`](scripts/done-on-main.py) | Whether an owed item's work already landed on main, by its files and by its title's words, before a prompt is written | 7 |
 | [`scripts/wall-check.py`](scripts/wall-check.py) | The publish gate: a word list kept outside the repository, plus secret, email and home-path shapes, over every tracked file, the staged files (`--staged`), a commit message (`--commit-msg`) or any text about to be posted (`--text-file`) | 12 |
+| [`scripts/mutation-pass.py`](scripts/mutation-pass.py) | Breaks one guard at a time in a copy of the scripts and hooks, runs the selftest on each copy, and names any break the selftest did not catch: a test never seen red is not evidence. Several minutes: one full selftest per break | 13 |
 | [`hooks/pre-commit`](hooks/pre-commit) | Optional: runs the publish gate on what a commit stages, and refuses the commit on a hit or when it cannot check | 12 |
 | [`hooks/commit-msg`](hooks/commit-msg) | Optional: refuses any Co-Authored-By trailer (human ones too) and any line that starts with "Generated with", for teams whose policy is that the tool is not a contributor; with `git config wallcheck.list` set, also runs the publish gate on the message | 12, 13 |
 

@@ -69,6 +69,10 @@ def find_blocks(text: str) -> list[list[str]]:
     return blocks
 
 
+# An unfilled template placeholder: an angle-bracket span with a space inside ("<the board's one line>").
+PLACEHOLDER_RE = re.compile(r"<[^<>\n]*\s[^<>\n]*>")
+
+
 def check_owed(raw: str) -> tuple[dict | None, list[str]]:
     fields = [f.strip() for f in raw.split("||")]
     if len(fields) != 5:
@@ -79,6 +83,9 @@ def check_owed(raw: str) -> tuple[dict | None, list[str]]:
         problems.append(f"an OWED line with no title: {raw[:120]}")
     if not trigger:
         problems.append(f"OWED '{title}' has no trigger (what should resurface it)")
+    for name, value in (("title", title), ("detail", detail), ("trigger", trigger)):
+        if PLACEHOLDER_RE.search(value):
+            problems.append(f"OWED {name} is an unfilled template placeholder: {value[:120]}")
     if band.lower() not in BANDS:
         problems.append(f"OWED '{title}' band '{band}' is not one of {', '.join(BANDS)}")
     who = owner.strip()
@@ -125,6 +132,8 @@ def parse(lines: list[str]) -> tuple[dict, list[str], list[str]]:
     for key in SINGLE:
         if not out.get(key.lower()):
             problems.append(f"{key} is missing or empty")
+        elif PLACEHOLDER_RE.search(out[key.lower()]):
+            problems.append(f"{key} is an unfilled template placeholder: {out[key.lower()][:120]}")
     result = out.get("result", "")
     if len(result) > RESULT_MAX:
         problems.append(f"RESULT is {len(result)} characters; the operator's line is at most {RESULT_MAX}")

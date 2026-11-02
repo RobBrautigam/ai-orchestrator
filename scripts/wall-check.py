@@ -36,6 +36,7 @@ under a named user's home folder on Windows, macOS or Linux (C:\\Users\\<name>,
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import os
 import re
 import subprocess
@@ -120,15 +121,47 @@ def read_text_or_exit(path: str) -> str:
         sys.exit(2)
 
 
+# git writes these itself; the object id in them is not a secret, so it is masked before the shapes run.
+GIT_SHA_LINE_RE = re.compile(r"\b(This reverts commit|cherry picked from commit)\s+[0-9a-f]{7,64}\b")
+
+
 def commit_message(text: str) -> str:
-    """What the author wrote: git's comment lines and everything from its --verbose scissors line down left out."""
+    """The message as it may be published: everything above git's --verbose scissors line. Lines that start
+    with '#' are KEPT: git keeps them for a message given with -m or -F, so dropping them would let a published
+    line through unread. The object id in git's own revert and cherry-pick lines is masked."""
     kept = []
     for line in text.splitlines():
         if line.startswith("# ------------------------ >8 ------------------------"):
             break
-        if not line.startswith("#"):
-            kept.append(line)
+        kept.append(GIT_SHA_LINE_RE.sub(lambda m: m.group(1) + " <sha>", line))
     return "\n".join(kept)
+
+
+def staged_texts(root: str, rels: list[str]):
+    """(rel, text) for each staged path, read in ONE git process (cat-file --batch) rather than one per file."""
+    batch = [r for r in rels if "\n" not in r]
+    for rel in rels:
+        if "\n" in rel:
+            yield rel, git_or_exit(root, "show", f":{rel}").decode("utf-8", "replace")
+    if not batch:
+        return
+    try:
+        out = subprocess.run(["git", "-C", root, "cat-file", "--batch"], check=True, capture_output=True,
+                             input=b"".join(b":" + r.encode("utf-8") + b"\n" for r in batch)).stdout
+    except (OSError, subprocess.CalledProcessError) as exc:
+        print(f"wall-check: git cat-file --batch failed: {exc}", file=sys.stderr)
+        sys.exit(2)
+    pos = 0
+    for rel in batch:
+        nl = out.find(b"\n", pos)
+        header = out[pos:nl].split(b" ") if nl >= 0 else []
+        if len(header) != 3 or not header[2].isdigit():
+            print(f"wall-check: could not read the staged copy of {rel}: {out[pos:nl if nl >= 0 else None][:120]!r}", file=sys.stderr)
+            sys.exit(2)
+        size = int(header[2])
+        start = nl + 1
+        yield rel, out[start:start + size].decode("utf-8", "replace")
+        pos = start + size + 1
 
 
 def sources(args: argparse.Namespace, root: str):
@@ -141,18 +174,23 @@ def sources(args: argparse.Namespace, root: str):
         return
     if args.staged:
         names = git_or_exit(root, "diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR").split(b"\0")
-        for raw in names:
-            rel = raw.decode("utf-8", "replace")
-            if not rel or os.path.splitext(rel)[1].lower() in SKIP_EXT:
-                continue
-            yield rel, git_or_exit(root, "show", f":{rel}").decode("utf-8", "replace")
+        rels = [raw.decode("utf-8", "replace") for raw in names]
+        yield from staged_texts(root, [r for r in rels if r and os.path.splitext(r)[1].lower() not in SKIP_EXT
+                                       and not skipped(r, args.skip)])
         return
     for rel in tracked_files(root, args.include_untracked):
+        if skipped(rel, args.skip):
+            continue
         try:
             with open(os.path.join(root, rel), encoding="utf-8", errors="replace") as fh:
                 yield rel, fh.read()
         except OSError:
             continue
+
+
+def skipped(rel: str, globs: list[str]) -> bool:
+    """A path the operator chose to leave out (a lockfile full of checksums), by a glob on its repository path."""
+    return any(fnmatch.fnmatch(rel, g) or fnmatch.fnmatch(os.path.basename(rel), g) for g in globs)
 
 
 def inside_allowed(line: str, start: int, end: int, allowed: list[str]) -> bool:
@@ -174,6 +212,7 @@ def main() -> int:
     ap.add_argument("--root", default=None, help="the repository root (default: the parent of this script's folder)")
     ap.add_argument("--include-untracked", action="store_true", help="also scan untracked, non-ignored files")
     ap.add_argument("--no-built-in", action="store_true", help="skip the built-in secret shapes")
+    ap.add_argument("--skip", action="append", default=[], help="leave out paths matching this glob (a lockfile full of checksums); repeatable")
     ap.add_argument("--self", action="store_true", help="also scan this script and the list files (off by default: they name the shapes they look for)")
     ap.add_argument("--staged", action="store_true", help="scan what the next commit adds: the staged version of every added, copied, modified or renamed file (the pre-commit hook's mode)")
     ap.add_argument("--text-file", action="append", default=[], help="scan this file's text instead of the tree (a pull request body, a release note); repeatable")

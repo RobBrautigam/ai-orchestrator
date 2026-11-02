@@ -51,7 +51,19 @@ if [ -n "$list" ]; then
         echo "commit refused: a word list is configured and the publish gate could not run (script $script, python '${py:-none}')." >&2
         exit 1
     fi
-    if ! "$py" "$script" --commit-msg "$msg_file" --list "$list"; then
+    # wallcheck.allow and wallcheck.builtin work as in pre-commit (git's own revert and cherry-pick ids are
+    # masked by the script; a sign-off email is a published email, so it is caught unless allowed).
+    set -- --commit-msg "$msg_file" --list "$list"
+    allows=$(git config --get-all wallcheck.allow)
+    if [ -n "$allows" ]; then
+        while IFS= read -r v; do [ -n "$v" ] && set -- "$@" --allow "$v"; done <<EOF
+$allows
+EOF
+    fi
+    if [ "$(git config --bool --get wallcheck.builtin)" = "false" ]; then
+        set -- "$@" --no-built-in
+    fi
+    if ! "$py" "$script" "$@"; then
         echo "commit refused by the publish gate on the message: take out what it named above and commit again." >&2
         exit 1
     fi

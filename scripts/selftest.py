@@ -7,9 +7,9 @@ briefing, then runs every script in scripts/ and the hook in hooks/ against it, 
 refusals and the negative controls included. Nothing outside the temporary folder is
 touched, and the folder is deleted at the end (--keep leaves it for reading).
 
-    python scripts/selftest.py            # under two minutes on Windows (1 min 21 s and 1 min 43 s measured for 39 checks); one line per check
+    python scripts/selftest.py            # about two minutes on Windows (1 min 51 s measured for 47 checks); one line per check
     python scripts/selftest.py --keep     # leave the toy repositories on disk and print where
-    python scripts/selftest.py --scripts-dir <dir> --hook <file>   # run the checks against copies (a mutation test)
+    python scripts/selftest.py --scripts-dir <dir> --hook <file> --pre-commit <file>   # against copies (scripts/mutation-pass.py)
 
 Exit 0 when every check passed, 1 otherwise.
 """
@@ -291,6 +291,13 @@ def block_checks(tmp: str, scripts: str) -> None:
           and "needs five fields" in out and "carried 91be07d4" in out,
           "fold-lines refuses a bad band, a pipe in the board line, a long result, a four-field owed line and an uncarried row, naming each",
           out + r.stderr)
+    unfilled = (GOOD_BLOCK.replace("RESULT: Refunds", "RESULT: <what changed for the operator, one sentence> Refunds")
+                .replace("BOARD: payments session 4 landed,", "BOARD: <the board's one line> payments session 4 landed,"))
+    path = os.path.join(tmp, "briefings", "2026-01-15-payments-s7.md")
+    write(path, "# Payments session 7\n\n```fold-lines\n" + unfilled + "```\n")
+    r = script(scripts, "fold-lines.py", path)
+    check(r.returncode == 1 and "RESULT is an unfilled template placeholder" in r.stdout and "BOARD is an unfilled template placeholder" in r.stdout,
+          "fold-lines refuses a block that still carries the template's placeholders", r.stdout + r.stderr)
 
 
 READY_PROMPT = """# Dispatch prompt: search session 2, the ranking behind a flag (opus, high, one slot; toy)
@@ -335,6 +342,22 @@ def prompt_checks(tmp: str, scripts: str, main: str) -> None:
     r = script(scripts, "prompt-check.py", path, "--root", main)
     check(r.returncode == 1 and "tells the session to ask" in r.stdout,
           "prompt-check refuses a body that tells an unattended session to ask (and passes \"never ask\")", r.stdout + r.stderr)
+    hedged = READY_PROMPT.replace("never ask the operator a question.",
+                                  "never ask the operator a question.\nIf you are not sure, ask the operator.\nDo not hesitate to ask the operator.")
+    path = os.path.join(tmp, "prompts", "hedged.md")
+    write(path, hedged)
+    r = script(scripts, "prompt-check.py", path, "--root", main)
+    check(r.returncode == 1 and r.stdout.count("tells the session to ask") == 2,
+          "prompt-check refuses an ask behind a negation that does not govern it (\"if you are not sure, ask\", \"do not hesitate to ask\")",
+          r.stdout + r.stderr)
+    prose = READY_PROMPT.replace("EXPECTED: 90 minutes. HARD STOP: 120 minutes after launch.",
+                                 "Never stop working before the hard stop.\n\nEXPECTED: 60 minutes. HARD STOP: an hour and a half after launch.")
+    path = os.path.join(tmp, "prompts", "prose.md")
+    write(path, prose)
+    r = script(scripts, "prompt-check.py", path, "--root", main)
+    check(r.returncode == 0 and "OK HARD STOP: 90 minutes after launch" in r.stdout,
+          "prompt-check reads the HARD STOP line past prose that mentions the hard stop, and \"an hour and a half\" as 90 minutes",
+          r.stdout + r.stderr)
 
 
 def publish_gate_checks(tmp: str, scripts: str) -> None:
@@ -375,6 +398,36 @@ def publish_gate_checks(tmp: str, scripts: str) -> None:
     write(body, "## Summary\n\nThe launch work for ACME CORP.\n")
     r = script(scripts, "wall-check.py", "--list", listfile, "--text-file", body)
     check(r.returncode == 1 and "term 'acme corp'" in r.stdout, "wall-check catches a listed name in a pull request body before it is posted", r.stdout + r.stderr)
+    commit_ok = git(pub, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "docs: the changelog")
+    revert = git(pub, "-c", "commit.gpgsign=false", "revert", "--no-edit", "HEAD")
+    check(commit_ok.returncode == 0 and revert.returncode == 0,
+          "the commit-msg gate lets git's own revert message through (its 40-character id is not a secret)",
+          commit_ok.stdout + commit_ok.stderr + revert.stdout + revert.stderr)
+    write(os.path.join(pub, "later.md"), "# later\n")
+    git(pub, "add", "later.md")
+    bad = git(pub, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "docs: later", "-m", "# acme corp launch")
+    check(bad.returncode != 0 and "commit message" in bad.stdout + bad.stderr,
+          "the commit-msg gate reads a line that starts with '#' (git keeps it for a -m message)", bad.stdout + bad.stderr)
+    git(pub, "rm", "-q", "--cached", "later.md")
+    write(os.path.join(pub, "a.md"), "# a clean page\n")
+    write(os.path.join(pub, "b.md"), "# b\n\nThanks to Acme Corp.\n")
+    git(pub, "add", "a.md", "b.md")
+    bad = git(pub, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "docs: two pages")
+    check(bad.returncode != 0 and "b.md:3: term 'acme corp'" in bad.stdout + bad.stderr and "a.md" not in bad.stdout,
+          "the pre-commit gate reads every staged file in one pass, and names the second of two", bad.stdout + bad.stderr)
+    git(pub, "rm", "-q", "--cached", "a.md", "b.md")
+    write(os.path.join(pub, "deps.lock"), "package = \"x\"\nchecksum = \"" + "9f" * 32 + "\"\n")
+    git(pub, "add", "deps.lock")
+    before = git(pub, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "chore: lockfile")
+    git(pub, "config", "--add", "wallcheck.skip", "*.lock")
+    after = git(pub, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "chore: lockfile")
+    check(before.returncode != 0 and after.returncode == 0,
+          "the pre-commit gate refuses a lockfile's checksum, and lets it through once the path is skipped (wallcheck.skip)",
+          before.stdout + before.stderr + after.stdout + after.stderr)
+    modes = git(REPO, "ls-files", "-s", "hooks/pre-commit", "hooks/commit-msg")
+    lines = modes.stdout.split("\n")
+    check(modes.returncode == 0 and len([x for x in lines if x.startswith("100755 ")]) == 2,
+          "both hooks are committed executable (mode 100755), so git runs them on Linux and macOS", modes.stdout + modes.stderr)
 
 
 if __name__ == "__main__":
