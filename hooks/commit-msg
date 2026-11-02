@@ -30,4 +30,42 @@ if printf '%s\n' "$body" | grep -qiE '^[^[:alnum:]]*generated (with|by) '; then
     echo "commit refused: the message carries a \"Generated with\" line. Take the line out and commit again." >&2
     exit 1
 fi
+
+# Optional, and only when a word list is configured (git config wallcheck.list <path>, the same
+# setting hooks/pre-commit reads): the publish gate on the message itself, because a commit
+# message is published with the code. wallcheck.script and wallcheck.python work as in pre-commit.
+list=$(git config --get wallcheck.list)
+if [ -n "$list" ]; then
+    script=$(git config --get wallcheck.script)
+    [ -n "$script" ] || script="$(git rev-parse --show-toplevel)/scripts/wall-check.py"
+    py=$(git config --get wallcheck.python)
+    if [ -z "$py" ]; then
+        for c in python python3 py; do
+            if command -v "$c" >/dev/null 2>&1 && "$c" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)' >/dev/null 2>&1; then
+                py=$c
+                break
+            fi
+        done
+    fi
+    if [ ! -f "$script" ] || [ -z "$py" ]; then
+        echo "commit refused: a word list is configured and the publish gate could not run (script $script, python '${py:-none}')." >&2
+        exit 1
+    fi
+    # wallcheck.allow and wallcheck.builtin work as in pre-commit (git's own revert and cherry-pick ids are
+    # masked by the script; a sign-off email is a published email, so it is caught unless allowed).
+    set -- --commit-msg "$msg_file" --list "$list"
+    allows=$(git config --get-all wallcheck.allow)
+    if [ -n "$allows" ]; then
+        while IFS= read -r v; do [ -n "$v" ] && set -- "$@" --allow "$v"; done <<EOF
+$allows
+EOF
+    fi
+    if [ "$(git config --bool --get wallcheck.builtin)" = "false" ]; then
+        set -- "$@" --no-built-in
+    fi
+    if ! "$py" "$script" "$@"; then
+        echo "commit refused by the publish gate on the message: take out what it named above and commit again." >&2
+        exit 1
+    fi
+fi
 exit 0

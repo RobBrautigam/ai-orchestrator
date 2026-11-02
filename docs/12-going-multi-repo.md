@@ -14,6 +14,16 @@ Sometimes one chair's world must not be visible to another: separate businesses,
 
 A wall is also a publish gate. This repository's own [`scripts/wall-check.py`](../scripts/wall-check.py) is the mechanical form of the test: a list of words that must not appear, kept outside the repository, run over every tracked file, exit 0 at zero hits. The same script, with a different list, checks a client deliverable before it leaves the building.
 
+**A gate run by hand is a gate skipped on the busy day, so the gate runs at the moment of action.** Three places, one script:
+
+- **Before the commit:** [`hooks/pre-commit`](../hooks/pre-commit) runs `wall-check.py --staged`, which reads the staged copy of each added or changed file (what the commit will hold, not what is on disk), and refuses the commit on a hit.
+- **On the commit message:** the optional [`hooks/commit-msg`](../hooks/commit-msg) runs `wall-check.py --commit-msg` when a list is configured, because a private name in a message is published the moment the branch is pushed.
+- **On what no git hook sees:** a pull request's title and body, a release note, an issue comment. These are published too. Write the text to a file first and run `wall-check.py --text-file <file>` before it is posted.
+
+Both hooks read the list's path from `git config wallcheck.list`, so the list itself never enters the repository. With no list, `pre-commit` still checks the built-in shapes (keys, emails, home paths) and says so; the message check in `commit-msg` runs only when a list is set, so a repository that installed that hook for its trailer rule alone is not changed. A hook that cannot find Python or the script refuses the commit with the reason rather than letting it through unchecked.
+
+Three settings keep the gate usable without a way around it: `git config --add wallcheck.skip '*.lock'` leaves out a path whose content is checksums by design; `git config --add wallcheck.allow 'Jane Doe'` excuses a hit inside that exact phrase (the author's own name, say); `git config wallcheck.builtin false` runs your list alone. git's own revert and cherry-pick lines carry a 40-character id that is not a secret, so the message check masks it; a `Signed-off-by` email is a published email, so it is caught unless allowed. None of these is `--no-verify`, which skips everything.
+
 ## The relay protocol
 
 Once two chairs run daily, clipboard relaying breaks: the operator becomes the single point of failure for cross-domain dependencies. The evolved system:

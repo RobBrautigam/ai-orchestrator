@@ -6,16 +6,16 @@ Rewritten by the chair on 2026-01-15 at 09:12 (machine clock). **Cap: six slots*
 
 ## Running: 3 sessions in 3 of 6 slots
 
-The first column is the slot; a design session takes two. Since is the machine clock at the launch line.
+The first column is the slot; a design session takes two. Since is the machine clock at the launch line. Expected and Hard stop are copied from the prompt's EXPECTED and HARD STOP lines at the launch (a length after Since, or a clock); `scripts/fold-check.py` names a row past either one.
 
-| Slot | Repo | Session | Model | Worktree | Since | What it does |
-|---|---|---|---|---|---|---|
-| 1 | myrepo | payments-s4 3f9a2c1e | opus, high | ../myrepo-payments | 2026-01-15 08:40 | The operator's drop 7 (08:14: "refunds should show up on the customer's statement the same day"): the refund path posts to the ledger synchronously, the statement view reads it, and the two are proven on a test account; ships with a patch bump and the live route probed |
-| 2 | myrepo | onboarding-s2 91be07d4 | opus, high | ../myrepo-onboarding | 2026-01-15 07:55 | The three empty states the audit found on the first-run screens get real copy and a real action each; walked at phone and desktop width in both themes |
-| 3 | | (free since 2026-01-15 09:10) | | | | on the chair: freed by the search-s1 fold; filled with the next authored prompt |
-| 4 | docs-site | docs-refresh-s1 c07d55aa | sonnet, low | ../docs-site-refresh | 2026-01-15 06:30 | Mechanical: every page's "last reviewed" line re-dated from git history, every dead link listed in a report; no prose rewritten |
-| 5 | | (free) | | | | |
-| 6 | | (free) | | | | |
+| Slot | Repo | Session | Model | Worktree | Since | Expected | Hard stop | What it does |
+|---|---|---|---|---|---|---|---|---|
+| 1 | myrepo | payments-s4 3f9a2c1e | opus, high | ../myrepo-payments | 2026-01-15 08:40 | 90 min | 150 min | The operator's drop 7 (08:14: "refunds should show up on the customer's statement the same day"): the refund path posts to the ledger synchronously, the statement view reads it, and the two are proven on a test account; ships with a patch bump and the live route probed |
+| 2 | myrepo | onboarding-s2 91be07d4 | opus, high | ../myrepo-onboarding | 2026-01-15 07:55 | 90 min | 150 min | The three empty states the audit found on the first-run screens get real copy and a real action each; walked at phone and desktop width in both themes |
+| 3 | | (free since 2026-01-15 09:10) | | | | | | on the chair: freed by the search-s1 fold; filled with the next authored prompt |
+| 4 | docs-site | docs-refresh-s1 c07d55aa | sonnet, low | ../docs-site-refresh | 2026-01-15 06:30 | 3 h | 2026-01-15 10:00 | Mechanical: every page's "last reviewed" line re-dated from git history, every dead link listed in a report; no prose rewritten |
+| 5 | | (free) | | | | | | |
+| 6 | | (free) | | | | | | |
 
 ## Next, in order: 4 waiting to start (1 READY)
 

@@ -20,7 +20,12 @@ The commands below are POSIX shell: on Windows run them in Git Bash, and on macO
    python scripts/selftest.py
    ```
 
-   Twenty-four checks run against a toy repository built in a temporary folder: a queue, a worktree, a landed briefing, the fold check naming it, the worktree rotation refusing the unsafe cases, the publish gate catching a planted private name, email and home path. Your own git configuration is shut out and never touched. The folder is deleted at the end (`--keep` leaves it for you to look at).
+   Forty-seven checks run against a toy repository built in a temporary folder: a queue, a worktree, a landed briefing, the fold check naming it (and naming a session past its hard stop), the worktree rotation refusing the unsafe cases, the prompt check refusing a prompt with no definition of done, the fold lines read the way the fold reads them, the publish gate catching a planted private name, email and home path in the tree, and a listed name in a staged commit, a commit message and a pull request body. Your own git configuration is shut out and never touched. The folder is deleted at the end (`--keep` leaves it for you to look at). It takes about two minutes on Windows, where git starts slowly, and ends:
+
+   ```
+   PASS 47: both hooks are committed executable (mode 100755), so git runs them on Linux and macOS
+   selftest: 47 of 47 checks passed
+   ```
 
 2. **Copy the kit into your repository:**
 
@@ -30,7 +35,15 @@ The commands below are POSIX shell: on Windows run them in Git Bash, and on macO
    cp /path/to/ai-orchestrator/templates/QUEUE.md docs/orchestration/prompts/QUEUE.md
    cp -r /path/to/ai-orchestrator/templates docs/orchestration/templates
    cp -r /path/to/ai-orchestrator/docs docs/orchestration/method
-   for f in fold-check rotate-worktree done-on-main wall-check; do cp /path/to/ai-orchestrator/scripts/$f.py scripts/; done
+   for f in fold-check fold-lines prompt-check rotate-worktree done-on-main wall-check; do cp /path/to/ai-orchestrator/scripts/$f.py scripts/; done
+   ```
+
+   Optional, the publish gate on every commit (the list stays outside the repository; [chapter 12](docs/12-going-multi-repo.md#one-directional-information-walls) has the details):
+
+   ```
+   cp /path/to/ai-orchestrator/hooks/pre-commit "$(git rev-parse --git-path hooks)/pre-commit"
+   chmod +x "$(git rev-parse --git-path hooks)/pre-commit"
+   git config wallcheck.list ~/wall-list.txt
    ```
 
    Then empty the three tables of the copied `QUEUE.md` (keep the headings and the cap line): the rows in it are an invented example. The chair creates `docs/orchestration/board.md` on its first boot.
@@ -42,6 +55,28 @@ The commands below are POSIX shell: on Windows run them in Git Bash, and on macO
 5. **Read the one line it sends when the session lands.** Answer the one question, if there is one, at the link it gives you. From the repository's main checkout, after a `git fetch`, `python scripts/fold-check.py` shows whether anything is waiting on the chair.
 
 Your tool's exact commands are in [adapters/](adapters/). The rest of this page is the map.
+
+### Requirements
+
+| Need | Version | Why |
+|---|---|---|
+| git | 2.36 or later | worktrees, and the selftest's toy repository |
+| Python | 3.9 or later, standard library only | the scripts and the hooks |
+| A POSIX shell | any (Git Bash on Windows) | the hooks and the quick start commands |
+| An agentic coding tool | one with a background or headless mode | the sessions; [adapters/](adapters/) lists eight |
+
+---
+
+## What's new in 2.2
+
+Four more rules that kept being broken became checks, each with its selftest, and [`scripts/mutation-pass.py`](scripts/mutation-pass.py) now ships, so anyone can break 22 guards one at a time in a copy and see which, if any, the selftest misses. The full list, with the why for each, is in the [changelog](CHANGELOG.md).
+
+1. **The fold lines.** A briefing ends with one fenced block the chair copies from: the result, the board line, effort, findings, spend, every owed item with its band and owner, every carried row. [`scripts/fold-lines.py`](scripts/fold-lines.py) reads it the way the fold will. ([Chapter 6](docs/06-the-briefing-file-and-the-pointer-block.md#the-fold-lines-the-part-of-the-file-the-chair-folds-from).)
+2. **The prompt check, before every launch.** [`scripts/prompt-check.py`](scripts/prompt-check.py) refuses a prompt with no `DONE MEANS` line in the body the session receives, no readable `HARD STOP`, an instruction to ask somebody, or a read-first path that does not exist. ([Chapter 4](docs/04-the-dispatch-prompt.md#what-makes-a-prompt-incomplete).)
+3. **The fold check knows the clock.** The queue's running table carries each session's expected time and hard stop, and the fold check names a session past either one. ([Chapter 7](docs/07-folding-from-files.md#the-ten-minute-fold-law-and-the-check-that-enforces-it).)
+4. **The publish gate at the moment of action.** A `pre-commit` hook checks what is staged, the `commit-msg` hook checks the message, and `--text-file` checks a pull request body before it is posted. ([Chapter 12](docs/12-going-multi-repo.md#one-directional-information-walls).)
+
+And in the chapters: handing the chair over to a fresh conversation, a second reviewer only for large or sensitive changes, rails written once, and what actually wakes a chair (a scheduled prompt did not, on the estate that wrote this).
 
 ---
 
@@ -79,6 +114,8 @@ Version 2 removed the human from the loop everywhere a file can stand in for a p
 - The operator is involved through exactly one surface: a short message that says what landed, what is running, and the one question that is genuinely theirs.
 
 Version 2.1 turns the rules that kept being broken into checks: a fold check the chair runs before each new ask, a worktree rotation that proves its commit hook runs, a done-on-main check before owed work is dispatched again, and a publish gate with a literal-match mode and a home-path shape.
+
+Version 2.2 does the same for the fold, the prompt and the publish moment: the fold copies from a checked block instead of composing from prose, a prompt is checked before it launches, the fold check reads each session's hard stop, and the publish gate runs on every commit instead of when someone remembers.
 
 The cost of running many sessions is real and it is the reason half the chapters exist. A session launched without an explicit model inherits whatever the operator last selected, which is usually the most expensive model on the account. A swarm of fifty helper agents on that model burned a whole day's allowance in one call. A finished session sat unfolded for twenty-five minutes while the chair was busy answering questions inside one long turn. Every rule below was written after something like that happened and was measured.
 
@@ -133,15 +170,19 @@ The rule that does not change per tool: **every launch names its model and its e
 
 ## The scripts: rules turned into checks
 
-Standard library Python, no dependencies, each proven by [`scripts/selftest.py`](scripts/selftest.py) on a toy repository (and each seen to fail it when deliberately broken). Each one refuses, or says "could not check", rather than report clean from a check that saw nothing.
+Standard library Python, no dependencies, each proven by [`scripts/selftest.py`](scripts/selftest.py) on a toy repository (and [`scripts/mutation-pass.py`](scripts/mutation-pass.py) breaks their guards in a copy, one at a time, to show the selftest fails when they do). Each one refuses, or says "could not check", rather than report clean from a check that saw nothing.
 
 | Script | What it checks | Chapter |
 |---|---|---|
-| [`scripts/fold-check.py`](scripts/fold-check.py) | Which sessions owe the chair a fold, a nudge or a stop. Read-only; run it before each new ask in a long turn and first in every tick | 7 |
+| [`scripts/fold-check.py`](scripts/fold-check.py) | Which sessions owe the chair a fold, a nudge or a stop, and which are past their expected time or hard stop. Read-only; run it before each new ask in a long turn and first in every tick | 7 |
+| [`scripts/fold-lines.py`](scripts/fold-lines.py) | Reads a briefing's `fold-lines` block the way the fold will, and refuses a malformed one | 6 |
+| [`scripts/prompt-check.py`](scripts/prompt-check.py) | Refuses a dispatch prompt with no definition of done, no readable hard stop, an instruction to ask, or a read-first path that does not exist | 4 |
 | [`scripts/rotate-worktree.py`](scripts/rotate-worktree.py) | Rotates a standing worktree onto a fresh branch, refusing the unsafe cases, and proves the commit hook runs there | 2 |
 | [`scripts/done-on-main.py`](scripts/done-on-main.py) | Whether an owed item's work already landed on main, by its files and by its title's words, before a prompt is written | 7 |
-| [`scripts/wall-check.py`](scripts/wall-check.py) | The publish gate: a word list kept outside the repository, plus secret, email and home-path shapes, over every tracked file | 12 |
-| [`hooks/commit-msg`](hooks/commit-msg) | Optional: refuses any Co-Authored-By trailer (human ones too) and any line that starts with "Generated with", for teams whose policy is that the tool is not a contributor | 13 |
+| [`scripts/wall-check.py`](scripts/wall-check.py) | The publish gate: a word list kept outside the repository, plus secret, email and home-path shapes, over every tracked file, the staged files (`--staged`), a commit message (`--commit-msg`) or any text about to be posted (`--text-file`) | 12 |
+| [`scripts/mutation-pass.py`](scripts/mutation-pass.py) | Breaks one guard at a time in a copy of the scripts and hooks, runs the selftest on each copy, and names any break the selftest did not catch: a test never seen red is not evidence. Several minutes: one full selftest per break | 13 |
+| [`hooks/pre-commit`](hooks/pre-commit) | Optional: runs the publish gate on what a commit stages, and refuses the commit on a hit or when it cannot check | 12 |
+| [`hooks/commit-msg`](hooks/commit-msg) | Optional: refuses any Co-Authored-By trailer (human ones too) and any line that starts with "Generated with", for teams whose policy is that the tool is not a contributor; with `git config wallcheck.list` set, also runs the publish gate on the message | 12, 13 |
 
 ---
 
@@ -155,6 +196,26 @@ python scripts/wall-check.py --list ~/wall-list.txt
 
 Exit 0 is zero hits. This repository's own publish gate is that command at zero, with a planted file caught first so the zero means something.
 
+The same check runs at the moment of action: `hooks/pre-commit` on what each commit stages, `hooks/commit-msg` on the message, both reading the list's path from `git config wallcheck.list`. A pull request body or a release note never passes through a git hook, so write it to a file and check it before posting:
+
+```
+python scripts/wall-check.py --list ~/wall-list.txt --text-file pr-body.md
+```
+
+---
+
+## Where this fits
+
+Other open-source projects run several coding agents at once; most of them are a terminal interface for watching and steering the agents. This repository is a method and a set of checks: the files that let one conversation dispatch, bound and fold many sessions without a human pasting between them. They combine; the method does not need any of them. Read on 2026-11-02:
+
+| Project | What it is | License |
+|---|---|---|
+| [smtg-ai/claude-squad](https://github.com/smtg-ai/claude-squad) | A terminal app that manages several agents (Claude Code, Codex, OpenCode, Amp), each in its own tmux session and git worktree | AGPL-3.0 |
+| [yohey-w/multi-agent-shogun](https://github.com/yohey-w/multi-agent-shogun) | A hierarchy of Claude Code agents in tmux panes (a lead, managers, workers) that coordinate through files | MIT |
+| [kingbootoshi/codex-orchestrator](https://github.com/kingbootoshi/codex-orchestrator) | A command-line tool that lets Claude Code delegate tasks to Codex agents in tmux sessions | MIT |
+
+What this repository adds that they do not set out to: the committed dispatch prompt with the operator's words and their receipts, the queue with a cap in slots, the briefing file and the fold, the cost rules, and checks that refuse at the moment a rule would be broken.
+
 ---
 
 ## Files in this repository
@@ -164,10 +225,14 @@ Exit 0 is zero hits. This repository's own publish gate is that command at zero,
 - **[templates/](templates/)**: the queue file, the dispatch prompt, the close-out card, the briefing, the pointer block. Copy them; do not link to them.
 - **[adapters/](adapters/)**: one short file per tool, and the provider table.
 - **[scripts/](scripts/)**: the checks above and their selftest.
-- **[hooks/](hooks/)**: the optional commit-msg hook.
+- **[hooks/](hooks/)**: the optional pre-commit and commit-msg hooks.
 - **[skills/orchestrator-brief/](skills/orchestrator-brief/SKILL.md)**: the on-demand briefing command.
 - **[RELAY-PROTOCOL.md](RELAY-PROTOCOL.md)** and **[OVERNIGHT-AUTOPILOT.md](OVERNIGHT-AUTOPILOT.md)**: kept from July, revised.
 - **[CHANGELOG.md](CHANGELOG.md)**: what moved, and why.
+
+## Where to get help
+
+Open an [issue](https://github.com/RobBrautigam/ai-orchestrator/issues) with what you ran, what you expected and what you saw; the selftest's output is the most useful thing to paste. Pull requests are welcome; run `python scripts/selftest.py` first.
 
 ## License
 

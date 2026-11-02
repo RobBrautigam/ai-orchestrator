@@ -58,7 +58,9 @@ The findings go in the briefing's section 3 with every source and its date. A se
 
 **The reviewer is specified, not implied.** One reviewer at the close, and the prompt says exactly what kind: a FRESH agent with its own context (never a fork of the session, which would share its blind spots), read-only, told what the repository is (public or private, and what must never appear in it), told what to hunt for, and told to echo its scope back. The session reads that scope echo against the diff and reads the reviewer's tool-use count before trusting a finding or a "clean": a reviewer that made three tool calls on a forty-file diff did not review it.
 
-**A hard stop.** A prompt for work that ends in something irreversible (a publish, a rename, a send the operator authorized) names the clock after which the session does NOT do it, and writes why instead. A session that runs long is how a half-checked thing goes public.
+**What done means, in one line.** `DONE MEANS:` names the observable state that ends the work: a merged pull request with its deploy read back, a page read back by its bytes, a count read from its command. Never a duration ("two hours of work") and never a feeling ("when it looks good"). A session with no line for done stops when it runs out of ideas, which is either too early or never.
+
+**An expected time and a hard stop, both in minutes or on the clock.** `EXPECTED: <n> minutes. HARD STOP: <n> minutes after launch` (or `at <HH:MM>` on the machine's 24-hour clock). The expected time is when the chair starts reading the session's last output if it has not landed; the hard stop is when the session does NOT do the irreversible step (a publish, a rename, a send the operator authorized, a merge) and writes why instead. A session that runs long is how a half-checked thing goes public. A clock with "am", "pm" or a time zone is refused: the machine clock is the only clock, and a zone is a second one. The chair copies both numbers into the queue's running row at the launch, and the fold check names the row past either one (chapter 7).
 
 ### The rails
 
@@ -79,7 +81,11 @@ A rail is written because something once went through the gap it closes. The rai
 
 ### The close
 
-The briefing file's path (the real date, the arc, the session number), its required contents beyond the eleven sections (the research with sources, the before-and-after numbers, each step's evidence, an effort line with the session's own token counts, deferrals as bullets, the loose-ends table, what the session started and what stopped it, by process id), the pull request and merge instruction, and then: the close-out card with the pointer block dead last; no starter prompt. Commits carry no AI co-author trailer.
+The briefing file's path (the real date, the arc, the session number), its required contents beyond the eleven sections (the research with sources, the before-and-after numbers, each step's evidence, an effort line with the session's own token counts, deferrals as bullets, the loose-ends table, what the session started and what stopped it, by process id, and the `fold-lines` block last in the file, chapter 6), the pull request and merge instruction, and then: the close-out card with the pointer block dead last; no starter prompt. Commits carry no AI co-author trailer.
+
+### Rails written once
+
+A chair that writes thirty prompts a week writes the same rails thirty times, and the copies drift: one prompt has "never `rm`" and the next does not, because it was typed from a slightly older one. Once a rail list is stable, it moves into one file the tool can load (a skill, a shared instructions file, a template partial), and the prompt's RAILS line names that file and adds only what is particular to this session. The prompt check below still reads the body the session receives, so a rail that lives in the file is a rail the session reads first, by name.
 
 ## What makes a prompt incomplete
 
@@ -91,6 +97,17 @@ The briefing file's path (the real date, the arc, the session number), its requi
 - A reviewer left unspecified, or a research step with no ceiling where a metered call is possible.
 - A version number remembered rather than read. The chair reads the version file and the tags immediately before writing the ship line.
 - A revision delivered as a diff. Any change to a prompt, however small, re-delivers the whole file.
+- A `DONE MEANS` line that is only a time, or that sits above the `---` line where the session never reads it.
+- A hard stop with no number, or with a clock the machine does not keep ("at 9pm", "14:00 UTC").
+- A body that tells an unattended session to ask ("ask the operator if unclear", "check with me before merging").
+
+**The check, before every launch:** [`scripts/prompt-check.py`](../scripts/prompt-check.py) reads the prompt file and refuses it for the shapes above that a script can see: no `DONE MEANS` line in the body (a line above the `---` does not count, and a line that is only a duration does not count), no readable `HARD STOP`, an `EXPECTED` later than a hard stop given in minutes, an instruction to ask (a negation excuses an ask only when it governs it: "never ask the operator" passes, "if you are not sure, ask the operator" and "do not hesitate to ask" are refused), and a read-first path that is neither on `origin/main` nor on disk. When prose mentions the hard stop before the line itself, the line with HARD STOP in capitals is the one read. A prompt with no `EXPECTED` line passes with a note, since the fold check then cannot name it over its expected time.
+
+```
+python scripts/prompt-check.py docs/orchestration/prompts/2026-01-15-search-s2-prompt.md
+```
+
+Exit 0 is ready to launch; exit 1 names every refusal, one per line; exit 2 is a file it could not read, which is never a pass. `--json` gives the same answer to the launcher, and `--no-paths` skips the path step for a prompt written before its files exist. The check reads words, not intent: a prompt it passes can still be a bad prompt, and the chair still reads it whole before the launch.
 
 ## Relays into a running session
 

@@ -7,9 +7,9 @@ briefing, then runs every script in scripts/ and the hook in hooks/ against it, 
 refusals and the negative controls included. Nothing outside the temporary folder is
 touched, and the folder is deleted at the end (--keep leaves it for reading).
 
-    python scripts/selftest.py            # about ten seconds; prints one line per check
+    python scripts/selftest.py            # about two minutes on Windows (1 min 51 s measured for 47 checks); one line per check
     python scripts/selftest.py --keep     # leave the toy repositories on disk and print where
-    python scripts/selftest.py --scripts-dir <dir> --hook <file>   # run the checks against copies (a mutation test)
+    python scripts/selftest.py --scripts-dir <dir> --hook <file> --pre-commit <file>   # against copies (scripts/mutation-pass.py)
 
 Exit 0 when every check passed, 1 otherwise.
 """
@@ -38,11 +38,11 @@ QUEUE = """# The dispatch queue
 
 ## Running: 2 sessions in 2 of 4 slots
 
-| Slot | Repo | Session | Model | Worktree | Since | What it does |
-|---|---|---|---|---|---|---|
-| 1 | toy | demo-s1 1a2b3c4d | opus, high | ../toy-demo | 2026-01-15 08:40 | The demo arc's first session |
-| 2 | toy | docs-s1 5e6f7a8b | sonnet, low | ../toy-docs | 2026-01-15 08:45 | A mechanical docs sweep |
-| 3 | | (free) | | | | |
+| Slot | Repo | Session | Model | Worktree | Since | Expected | Hard stop | What it does |
+|---|---|---|---|---|---|---|---|---|
+| 1 | toy | demo-s1 1a2b3c4d | opus, high | ../toy-demo | 2026-01-15 08:40 | 45 min | 90 min | The demo arc's first session |
+| 2 | toy | docs-s1 5e6f7a8b | sonnet, low | ../toy-docs | 2026-01-15 08:45 | | | A mechanical docs sweep |
+| 3 | | (free) | | | | | | |
 
 ## Landed since 2026-01-08: 1 session
 
@@ -53,6 +53,7 @@ QUEUE = """# The dispatch queue
 
 results: list[tuple[bool, str]] = []
 HOOK = os.path.join(REPO, "hooks", "commit-msg")
+PRE_COMMIT = os.path.join(REPO, "hooks", "pre-commit")
 
 
 def check(ok: bool, text: str, detail: str = "") -> None:
@@ -89,10 +90,12 @@ def main() -> int:
     ap.add_argument("--keep", action="store_true")
     ap.add_argument("--scripts-dir", default=HERE)
     ap.add_argument("--hook", default=os.path.join(REPO, "hooks", "commit-msg"))
+    ap.add_argument("--pre-commit", default=os.path.join(REPO, "hooks", "pre-commit"))
     args = ap.parse_args()
     scripts = os.path.abspath(args.scripts_dir)
-    global HOOK
+    global HOOK, PRE_COMMIT
     HOOK = os.path.abspath(args.hook)
+    PRE_COMMIT = os.path.abspath(args.pre_commit)
     tmp = tempfile.mkdtemp(prefix="ai-orchestrator-selftest-")
     try:
         run_checks(tmp, scripts)
@@ -163,9 +166,24 @@ def run_checks(tmp: str, scripts: str) -> None:
     check(r.returncode == 0, "wall-check is back to 0 hits once the planted file is removed", r.stdout + r.stderr)
 
     # --- fold-check -------------------------------------------------------------------------
-    fc = ("fold-check.py", "--root", main, "--exit-code")
+    fc = ("fold-check.py", "--root", main, "--exit-code", "--now", "2026-01-15 09:00")
     r = script(scripts, *fc)
-    check(r.returncode == 0 and "all clear: 2 session(s)" in r.stdout, "fold-check reads all clear before anything landed", r.stdout + r.stderr)
+    check(r.returncode == 0 and "all clear: 2 session(s)" in r.stdout and "no hard stop recorded for docs-s1" in r.stdout,
+          "fold-check reads all clear before anything landed, and names the session with no hard stop", r.stdout + r.stderr)
+    fc_clock = ("fold-check.py", "--root", main, "--exit-code")
+    r = script(scripts, *fc_clock, "--now", "2026-01-15 09:40")
+    check(r.returncode == 1 and "OVER EXPECTED: demo-s1 (slot 1) is 15 minute(s) over" in r.stdout and "PAST HARD STOP" not in r.stdout,
+          "fold-check names a session over its expected time while it is inside its hard stop", r.stdout + r.stderr)
+    r = script(scripts, *fc_clock, "--now", "2026-01-15 10:30")
+    check(r.returncode == 1 and "PAST HARD STOP: demo-s1 (slot 1) is 20 minute(s) past" in r.stdout and "OVER EXPECTED" not in r.stdout,
+          "fold-check names a session past its hard stop, once, before anything else about its clock", r.stdout + r.stderr)
+    with open(os.path.join(main, "docs/orchestration/prompts/QUEUE.md"), encoding="utf-8") as fh:
+        queue_now = fh.read()
+    write(os.path.join(main, "docs/orchestration/prompts/QUEUE.md"), queue_now.replace("| 45 min | 90 min |", "| 45 min | soonish |"))
+    r = script(scripts, *fc_clock, "--now", "2026-01-15 09:00")
+    check(r.returncode == 2 and "soonish" in r.stdout and "NOT an all clear" in r.stdout,
+          "fold-check says it could not check when a hard stop cell cannot be read, never all clear", r.stdout + r.stderr)
+    write(os.path.join(main, "docs/orchestration/prompts/QUEUE.md"), queue_now)
     r = script(scripts, *fc, "--ref", "origin/no-such-branch")
     check(r.returncode == 2 and "NOT an all clear" in r.stdout and "all clear:" not in r.stdout,
           "fold-check never says all clear when it could not read the ref", r.stdout + r.stderr)
@@ -232,6 +250,184 @@ def run_checks(tmp: str, scripts: str) -> None:
     check(r.returncode == 2 and "REFUSED" in r.stdout, "done-on-main refuses rather than claim a check that saw nothing", r.stdout + r.stderr)
     r = script(scripts, "done-on-main.py", "--root", main, "--no-fetch", "--since", "deadbeef", "--files", "src/app.txt")
     check(r.returncode == 2 and "is not a commit here" in r.stdout, "done-on-main refuses a mistyped start instead of reading clean", r.stdout + r.stderr)
+
+    block_checks(tmp, scripts)
+    prompt_checks(tmp, scripts, main)
+    publish_gate_checks(tmp, scripts)
+
+
+GOOD_BLOCK = """RESULT: Refunds now show on the customer's statement the same day.
+BOARD: payments session 4 landed, the refund posts to the ledger synchronously (PR 214, v1.41.3)
+EFFORT: opus, high, 52 minutes, 3.1M tokens in, 41K out
+FINDINGS: 2 from the reviewer, both fixed
+SPEND: $0
+OWED: Retry the stuck December refunds || twelve refunds stuck before the fix || the next payments session || next || null
+OWED: Pick the statement wording || two wordings are live behind a flag || the operator answers || later || operator: answer
+CARRY: 3f9a2c1e done: section 3.3
+"""
+
+
+def block_checks(tmp: str, scripts: str) -> None:
+    # --- fold-lines: the briefing's fold block ---------------------------------------------
+    good = os.path.join(tmp, "briefings", "2026-01-15-payments-s4.md")
+    write(good, "# Payments session 4\n\n## 1. Intent\n\nMatched cleanly.\n\n```fold-lines\n" + GOOD_BLOCK + "```\n")
+    r = script(scripts, "fold-lines.py", good, "--carry", "3f9a2c1e")
+    check(r.returncode == 0 and "FOLD LINES OK" in r.stdout and "OWED (later, on the operator: answer): Pick the statement wording" in r.stdout
+          and "CARRY 3f9a2c1e: done" in r.stdout,
+          "fold-lines reads a whole block and prints what the fold will file", r.stdout + r.stderr)
+    none = os.path.join(tmp, "briefings", "2026-01-15-payments-s5.md")
+    write(none, "# Payments session 5\n\n```\nRESULT: a plain fence is not the block\n```\n")
+    r = script(scripts, "fold-lines.py", none)
+    check(r.returncode == 1 and "no ```fold-lines block" in r.stdout, "fold-lines refuses a briefing with no fold block", r.stdout + r.stderr)
+    bad_block = (GOOD_BLOCK.replace("|| next || null", "|| soon || null")
+                 .replace("BOARD: payments session 4 landed,", "BOARD: payments | session 4 landed,")
+                 .replace("RESULT: Refunds", "RESULT: " + "Very long. " * 20 + "Refunds")
+                 .replace("|| later || operator: answer", "|| later"))
+    bad = os.path.join(tmp, "briefings", "2026-01-15-payments-s6.md")
+    write(bad, "# Payments session 6\n\n```fold-lines\n" + bad_block + "```\n")
+    r = script(scripts, "fold-lines.py", bad, "--carry", "91be07d4")
+    out = r.stdout
+    check(r.returncode == 1 and "band 'soon'" in out and "BOARD carries a pipe" in out and "RESULT is" in out
+          and "needs five fields" in out and "carried 91be07d4" in out,
+          "fold-lines refuses a bad band, a pipe in the board line, a long result, a four-field owed line and an uncarried row, naming each",
+          out + r.stderr)
+    unfilled = (GOOD_BLOCK.replace("RESULT: Refunds", "RESULT: <what changed for the operator, one sentence> Refunds")
+                .replace("BOARD: payments session 4 landed,", "BOARD: <the board's one line> payments session 4 landed,"))
+    path = os.path.join(tmp, "briefings", "2026-01-15-payments-s7.md")
+    write(path, "# Payments session 7\n\n```fold-lines\n" + unfilled + "```\n")
+    r = script(scripts, "fold-lines.py", path)
+    check(r.returncode == 1 and "RESULT is an unfilled template placeholder" in r.stdout and "BOARD is an unfilled template placeholder" in r.stdout,
+          "fold-lines refuses a block that still carries the template's placeholders", r.stdout + r.stderr)
+
+
+READY_PROMPT = """# Dispatch prompt: search session 2, the ranking behind a flag (opus, high, one slot; toy)
+
+Read first, in full: `src/app.txt`, `docs/orchestration/prompts/QUEUE.md`.
+
+---
+
+You are search session 2 in ../toy-search on feat/search-s2. Nobody is at the keyboard: never ask the operator a question.
+
+DONE MEANS: the ranking merged behind its flag, and the measurement beats the baseline on the fixture.
+
+EXPECTED: 90 minutes. HARD STOP: 120 minutes after launch.
+"""
+
+
+def prompt_checks(tmp: str, scripts: str, main: str) -> None:
+    # --- prompt-check: a dispatch prompt ready to launch, or refused ------------------------
+    ready = os.path.join(tmp, "prompts", "ready.md")
+    write(ready, READY_PROMPT)
+    r = script(scripts, "prompt-check.py", ready, "--root", main)
+    check(r.returncode == 0 and "OK DONE MEANS: the ranking merged" in r.stdout and "OK HARD STOP: 120 minutes after launch" in r.stdout
+          and "OK EXPECTED: 90 minutes" in r.stdout and "read-first src/app.txt: ok" in r.stdout,
+          "prompt-check passes a ready prompt (a done-means state, a timed stop, an expected time, read-first paths on main)", r.stdout + r.stderr)
+    timed = READY_PROMPT.replace("DONE MEANS: the ranking merged behind its flag, and the measurement beats the baseline on the fixture.",
+                                 "DONE MEANS: two hours after launch.").replace("HARD STOP: 120 minutes after launch.", "HARD STOP at 5:30 pm.")
+    path = os.path.join(tmp, "prompts", "timed.md")
+    write(path, timed)
+    r = script(scripts, "prompt-check.py", path, "--root", main)
+    check(r.returncode == 1 and "only a time" in r.stdout and "am, pm or a zone" in r.stdout,
+          "prompt-check refuses a done-means line that is only a time, and a hard stop read in am or pm", r.stdout + r.stderr)
+    head_only = READY_PROMPT.replace("`src/app.txt`", "`src/moved.txt`").replace(
+        "DONE MEANS: the ranking", "Notes: the ranking").replace("---\n", "DONE MEANS: the ranking merged.\n\n---\n", 1)
+    path = os.path.join(tmp, "prompts", "head-only.md")
+    write(path, head_only)
+    r = script(scripts, "prompt-check.py", path, "--root", main)
+    check(r.returncode == 1 and "in the head only" in r.stdout and "read-first path not on origin/main and not on disk: src/moved.txt" in r.stdout,
+          "prompt-check refuses a done-means line the session never receives and a read-first path that moved", r.stdout + r.stderr)
+    asking = READY_PROMPT.replace("never ask the operator a question.", "ask the operator if anything is unclear.")
+    path = os.path.join(tmp, "prompts", "asking.md")
+    write(path, asking)
+    r = script(scripts, "prompt-check.py", path, "--root", main)
+    check(r.returncode == 1 and "tells the session to ask" in r.stdout,
+          "prompt-check refuses a body that tells an unattended session to ask (and passes \"never ask\")", r.stdout + r.stderr)
+    hedged = READY_PROMPT.replace("never ask the operator a question.",
+                                  "never ask the operator a question.\nIf you are not sure, ask the operator.\nDo not hesitate to ask the operator.")
+    path = os.path.join(tmp, "prompts", "hedged.md")
+    write(path, hedged)
+    r = script(scripts, "prompt-check.py", path, "--root", main)
+    check(r.returncode == 1 and r.stdout.count("tells the session to ask") == 2,
+          "prompt-check refuses an ask behind a negation that does not govern it (\"if you are not sure, ask\", \"do not hesitate to ask\")",
+          r.stdout + r.stderr)
+    prose = READY_PROMPT.replace("EXPECTED: 90 minutes. HARD STOP: 120 minutes after launch.",
+                                 "Never stop working before the hard stop.\n\nEXPECTED: 60 minutes. HARD STOP: an hour and a half after launch.")
+    path = os.path.join(tmp, "prompts", "prose.md")
+    write(path, prose)
+    r = script(scripts, "prompt-check.py", path, "--root", main)
+    check(r.returncode == 0 and "OK HARD STOP: 90 minutes after launch" in r.stdout,
+          "prompt-check reads the HARD STOP line past prose that mentions the hard stop, and \"an hour and a half\" as 90 minutes",
+          r.stdout + r.stderr)
+
+
+def publish_gate_checks(tmp: str, scripts: str) -> None:
+    # --- the publish gate at the moment of action: pre-commit, commit-msg, a pull request body --
+    pub = os.path.join(tmp, "toy-public")
+    git(tmp, "init", "-q", "-b", "main", pub)
+    hooks = git(pub, "rev-parse", "--path-format=absolute", "--git-path", "hooks").stdout.strip()
+    inside = os.path.commonpath([os.path.realpath(hooks), os.path.realpath(tmp)]) == os.path.realpath(tmp)
+    check(inside, "the public toy repository's hooks folder is inside the temporary folder", hooks)
+    if not inside:
+        return
+    os.makedirs(hooks, exist_ok=True)
+    for name, src in (("pre-commit", PRE_COMMIT), ("commit-msg", HOOK)):
+        shutil.copy(src, os.path.join(hooks, name))
+        os.chmod(os.path.join(hooks, name), 0o755)
+    listfile = os.path.join(tmp, "public-wall-list.txt")
+    write(listfile, "acme corp\n")
+    fwd = lambda p: p.replace("\\", "/")
+    git(pub, "config", "wallcheck.list", fwd(listfile))
+    git(pub, "config", "wallcheck.script", fwd(os.path.join(scripts, "wall-check.py")))
+    git(pub, "config", "wallcheck.python", fwd(sys.executable))
+    write(os.path.join(pub, "README.md"), "# a public toy\n")
+    git(pub, "add", "README.md")
+    ok = git(pub, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "docs: a clean readme")
+    check(ok.returncode == 0, "the pre-commit gate lets a clean commit through", ok.stdout + ok.stderr)
+    write(os.path.join(pub, "notes.md"), "Built for Acme Corp's launch.\n")
+    git(pub, "add", "notes.md")
+    bad = git(pub, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "docs: launch notes")
+    check(bad.returncode != 0 and "notes.md:1: term 'acme corp'" in bad.stdout + bad.stderr,
+          "the pre-commit gate refuses a commit that stages a listed name, naming the file and line", bad.stdout + bad.stderr)
+    git(pub, "rm", "-q", "--cached", "notes.md")
+    write(os.path.join(pub, "CHANGELOG.md"), "# changes\n")
+    git(pub, "add", "CHANGELOG.md")
+    bad = git(pub, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "docs: the acme-corp changelog")
+    check(bad.returncode != 0 and "commit message" in bad.stdout + bad.stderr,
+          "the commit-msg gate refuses a message that carries a listed name", bad.stdout + bad.stderr)
+    body = os.path.join(tmp, "pr-body.md")
+    write(body, "## Summary\n\nThe launch work for ACME CORP.\n")
+    r = script(scripts, "wall-check.py", "--list", listfile, "--text-file", body)
+    check(r.returncode == 1 and "term 'acme corp'" in r.stdout, "wall-check catches a listed name in a pull request body before it is posted", r.stdout + r.stderr)
+    commit_ok = git(pub, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "docs: the changelog")
+    revert = git(pub, "-c", "commit.gpgsign=false", "revert", "--no-edit", "HEAD")
+    check(commit_ok.returncode == 0 and revert.returncode == 0,
+          "the commit-msg gate lets git's own revert message through (its 40-character id is not a secret)",
+          commit_ok.stdout + commit_ok.stderr + revert.stdout + revert.stderr)
+    write(os.path.join(pub, "later.md"), "# later\n")
+    git(pub, "add", "later.md")
+    bad = git(pub, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "docs: later", "-m", "# acme corp launch")
+    check(bad.returncode != 0 and "commit message" in bad.stdout + bad.stderr,
+          "the commit-msg gate reads a line that starts with '#' (git keeps it for a -m message)", bad.stdout + bad.stderr)
+    git(pub, "rm", "-q", "--cached", "later.md")
+    write(os.path.join(pub, "a.md"), "# a clean page\n")
+    write(os.path.join(pub, "b.md"), "# b\n\nThanks to Acme Corp.\n")
+    git(pub, "add", "a.md", "b.md")
+    bad = git(pub, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "docs: two pages")
+    check(bad.returncode != 0 and "b.md:3: term 'acme corp'" in bad.stdout + bad.stderr and "a.md" not in bad.stdout,
+          "the pre-commit gate reads every staged file in one pass, and names the second of two", bad.stdout + bad.stderr)
+    git(pub, "rm", "-q", "--cached", "a.md", "b.md")
+    write(os.path.join(pub, "deps.lock"), "package = \"x\"\nchecksum = \"" + "9f" * 32 + "\"\n")
+    git(pub, "add", "deps.lock")
+    before = git(pub, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "chore: lockfile")
+    git(pub, "config", "--add", "wallcheck.skip", "*.lock")
+    after = git(pub, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "chore: lockfile")
+    check(before.returncode != 0 and after.returncode == 0,
+          "the pre-commit gate refuses a lockfile's checksum, and lets it through once the path is skipped (wallcheck.skip)",
+          before.stdout + before.stderr + after.stdout + after.stderr)
+    modes = git(REPO, "ls-files", "-s", "hooks/pre-commit", "hooks/commit-msg")
+    lines = modes.stdout.split("\n")
+    check(modes.returncode == 0 and len([x for x in lines if x.startswith("100755 ")]) == 2,
+          "both hooks are committed executable (mode 100755), so git runs them on Linux and macOS", modes.stdout + modes.stderr)
 
 
 if __name__ == "__main__":

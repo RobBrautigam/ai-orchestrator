@@ -1,0 +1,80 @@
+#!/bin/sh
+# pre-commit: the publish gate on what this commit adds.
+#
+# Optional. Install it in a repository that is public, or that will be: it runs
+# scripts/wall-check.py --staged, which reads the staged version of every file this
+# commit adds or changes and refuses the commit on a word from your list (kept OUTSIDE
+# the repository) or a built-in shape (a key, an email address, a home path). A rule in
+# memory ("never publish a private name") loses to one tired commit; this is the check at
+# the moment of action.
+#
+# Configure once per repository (worktrees share it):
+#   git config wallcheck.list ~/wall-list.txt      # your word list; without it only the built-in shapes run
+#   git config wallcheck.script <path>             # optional: default <repository>/scripts/wall-check.py
+#   git config wallcheck.python <path>             # optional: a Python 3.9+ interpreter's path
+#   git config --add wallcheck.skip '*.lock'       # optional, repeatable: a path glob left out (checksum files)
+#   git config --add wallcheck.allow 'Jane Doe'    # optional, repeatable: a phrase inside which a hit is not a hit
+#   git config wallcheck.builtin false             # optional: your list only, no built-in shapes
+#
+# Install: copy to the path `git rev-parse --git-path hooks` prints (or your core.hooksPath
+# folder) and make it executable. A refusal names the file, the line and what matched;
+# take the text out and commit again. Never --no-verify past it: that is the leak it exists for.
+
+top=$(git rev-parse --show-toplevel) || exit 1
+script=$(git config --get wallcheck.script)
+[ -n "$script" ] || script="$top/scripts/wall-check.py"
+list=$(git config --get wallcheck.list)
+
+py=$(git config --get wallcheck.python)
+if [ -z "$py" ]; then
+    # python first: on some Windows machines python3 is an installer stub, not an interpreter.
+    for c in python python3 py; do
+        if command -v "$c" >/dev/null 2>&1 && "$c" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)' >/dev/null 2>&1; then
+            py=$c
+            break
+        fi
+    done
+fi
+
+if [ ! -f "$script" ]; then
+    echo "commit refused: the publish gate could not run ($script is missing). Set git config wallcheck.script, or remove this hook on purpose." >&2
+    exit 1
+fi
+if [ -z "$py" ]; then
+    echo "commit refused: the publish gate could not run (no Python 3.9 or later found). Set git config wallcheck.python <path>." >&2
+    exit 1
+fi
+
+set -- --staged --root "$top"
+if [ -n "$list" ]; then
+    set -- "$@" --list "$list"
+else
+    echo "pre-commit: no word list configured (git config wallcheck.list <path>); checking the built-in shapes only" >&2
+fi
+# Each of these is read one value per line, so a phrase or a glob may hold spaces.
+skips=$(git config --get-all wallcheck.skip)
+allows=$(git config --get-all wallcheck.allow)
+if [ -n "$skips" ]; then
+    while IFS= read -r v; do [ -n "$v" ] && set -- "$@" --skip "$v"; done <<EOF
+$skips
+EOF
+fi
+if [ -n "$allows" ]; then
+    while IFS= read -r v; do [ -n "$v" ] && set -- "$@" --allow "$v"; done <<EOF
+$allows
+EOF
+fi
+if [ "$(git config --bool --get wallcheck.builtin)" = "false" ]; then
+    set -- "$@" --no-built-in
+fi
+"$py" "$script" "$@"
+status=$?
+if [ $status -eq 0 ]; then
+    exit 0
+fi
+if [ $status -eq 1 ]; then
+    echo "commit refused by the publish gate: take out what it named above and commit again." >&2
+else
+    echo "commit refused: the publish gate could not check (exit $status); nothing was proved clean." >&2
+fi
+exit 1
