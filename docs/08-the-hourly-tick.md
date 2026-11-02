@@ -6,7 +6,7 @@
 
 ## Why a fixed cadence
 
-Landings are event-driven (chapter 7): the chair folds a session the minute its file appears. But three things do not raise events: a session that stopped early and is waiting for nobody; a slot that stayed free because the top waiting row's gate quietly opened; and a process left resident by a session that ended an hour ago. The tick exists for those. It is scheduled inside the chair's own tool (a recurring prompt on the chair's session, never a scheduled task or a daemon on the operator's machine) and it costs one short turn an hour.
+Landings are event-driven (chapter 7): the chair folds a session the minute its file appears. But three things do not raise events: a session that stopped early and is waiting for nobody; a slot that stayed free because the top waiting row's gate quietly opened; and a process left resident by a session that ended an hour ago. The tick exists for those. It is started from inside the chair's own tool (a recurring prompt where the tool can fire one, or a bounded background wait whose end opens a turn; never a scheduled task or a daemon on the operator's machine; see "What wakes the chair" below) and it costs one short turn an hour.
 
 ## The twelve steps
 
