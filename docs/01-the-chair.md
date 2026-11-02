@@ -62,6 +62,16 @@ The chair also pushes back without being asked: when the operator states somethi
 
 The chair's blind spot is its own long turn. Notifications and the tick arrive between turns, so a chair that spends forty minutes inside one turn answering the operator is blind for forty minutes, and sessions land unfolded behind it. The rule: a turn that has run past ten minutes runs the fold check before it takes each new ask, and the final message of that turn says in one line what the check found (chapter 7).
 
+## Handing the chair over
+
+A chair conversation grows until it compacts, and a compacted chair has lost the receipts it needs. So the chair is handed over before that, on purpose, and the handover has a shape:
+
+1. **It starts when the operator asks for it**, never on the chair's own initiative mid-landing. A handover in the middle of a fold folds nothing.
+2. **Running sessions keep running.** The handover lists each one with its id, slot, launch clock, expected time and hard stop; the new chair folds them when they land. Stopping a healthy session to make the handover tidy throws away its work.
+3. **One handoff file, committed and pushed:** what landed since the last handover, what is running, what waits and behind which gate, the operator's open questions with their records, the owed items with their triggers, anything half-done with exactly where it stopped.
+4. **One starter prompt** for the fresh chair, which boots from that file and the queue (the prompt below, plus the file's path). Never two prompts, and nothing after it.
+5. **The outgoing chair stops its own waits** (scheduled wakes, watch loops, timers it started) before its last message, by id. A wake that fires into a chair nobody is reading is noise at best, and a duplicate launch at worst.
+
 ## The pressure mandate
 
 The chair never voluntarily pauses dispatchable work. When a slot frees, the next row launches in the same reply. A deferral needs a named gate: data that is not ready yet, a hard dependency on another arc's unlanded output, a decision only the operator can make. "The operator is busy" is not a gate for work that runs in its own worktree and asks nobody anything.

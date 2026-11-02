@@ -28,6 +28,8 @@ One reviewer, named in the prompt, recorded in the briefing. Not seven. A sessio
 
 The reviewer is a fresh agent with its own context, never a fork of the session: a fork inherits the session's reading of the problem, and its blind spots with it. It is read-only, it is told what the repository is and what must never appear in it, and it echoes its scope back before its findings. Two numbers are read before any finding is trusted, and both go in the briefing: **the scope echo against the diff** (did it look at what changed, all of it?) and **the tool-use count** (a reviewer that made three tool calls on a forty-file change did not review it). Every finding is fixed or answered in the briefing, one line each, and the checks that gate the ship are re-run after the fixes, not before.
 
+**A second reviewer, only when the change asks for one.** One reviewer is the default because most changes are small and most findings come from the first pair of eyes. Two kinds of change earn a second, focused reviewer, named in the prompt: a change of more than about 1,000 lines of code, where one reviewer's attention runs out before the diff does; and any change to sign-in, page security (who can see what) or money, where a missed finding is a breach or a wrong charge rather than a bug. The second reviewer is told the first one's scope and hunts only its own question; it is never a second general pass.
+
 ## What counts as evidence
 
 - **The exercised surface, never code that looks right.** A rendered page, a real response, the downstream side effect, captured. A "published" state means nothing until the thing exists at its destination.

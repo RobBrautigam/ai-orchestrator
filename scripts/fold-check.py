@@ -23,6 +23,8 @@ Options:
                           id|sessionId|session_id, state|status.
     --exit-code           exit 1 when anything is named (for a script's gate); without it, 0 whenever the
                           check ran. Exit 2 always means it could not check (below).
+    --now <time>          the clock the overrun lines are measured against, "YYYY-MM-DD HH:MM" (default: the
+                          machine clock, local time; the queue's clocks are the machine clock too)
 
 What it names, one line each:
     FOLD OWED        the session's briefing file is on the ref and its row still holds a slot
@@ -33,6 +35,15 @@ What it names, one line each:
     NEEDS INPUT      the tool says it is waiting on a question or a permission: answer it the same minute
     GONE             the running table shows it and the tool no longer lists it at all
     UNTRACKED        the tool lists a live session the running table does not show
+    PAST HARD STOP   the clock is past the row's hard stop and nothing above was named for it: read its last
+                     output, then let it close with what is proven or stop it by id
+    OVER EXPECTED    the clock is past the row's expected time and inside its hard stop: read its last output
+
+The two overrun lines read the running table's optional "Expected" and "Hard stop" columns: a length
+from the "Since" clock ("120 min", "90m", "2 h", "2h30"), or a clock ("YYYY-MM-DD HH:MM", or "HH:MM",
+the next such time after Since). A blank cell means none was set; the all-clear line then names the
+sessions with no hard stop, because "all clear" about a session nobody bounded is a weaker claim. A
+non-blank cell that cannot be read is a "could not check", never a guess.
 
 A row whose session cell reads "(free...)" is a free slot and is skipped. A briefing counts
 as landed when its file name ends with the session name the running table shows
@@ -47,6 +58,7 @@ whatever --exit-code says, because a false all clear is this check's worst failu
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 import os
 import re
@@ -55,6 +67,38 @@ import sys
 
 ENDED = {"completed", "complete", "done", "failed", "error", "stopped", "idle", "exited"}
 WAITING = {"needs input", "needs_input", "waiting", "blocked", "asking"}
+STAMP = "%Y-%m-%d %H:%M"
+LENGTH_RE = re.compile(r"^(?:(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hours?))?\s*(?:(\d+(?:\.\d+)?)\s*(?:m|min|mins|minutes?)?)?$", re.I)
+
+
+def read_stamp(text: str) -> dt.datetime | None:
+    try:
+        return dt.datetime.strptime(text.strip(), STAMP)
+    except ValueError:
+        return None
+
+
+def deadline(cell: str, since: dt.datetime | None) -> tuple[dt.datetime | None, str | None]:
+    """(the deadline, None), (None, None) for a blank cell, or (None, why) when the cell cannot be read."""
+    cell = cell.strip()
+    if not cell or cell in {"-", "none", "n/a"}:
+        return None, None
+    stamp = read_stamp(cell)
+    if stamp:
+        return stamp, None
+    clock = re.fullmatch(r"([01]?\d|2[0-3]):([0-5]\d)", cell)
+    if clock:
+        if since is None:
+            return None, f"'{cell}' is a clock, and the row has no Since clock to place it after"
+        due = since.replace(hour=int(clock.group(1)), minute=int(clock.group(2)))
+        return (due if due > since else due + dt.timedelta(days=1)), None
+    m = LENGTH_RE.match(cell)
+    if m and (m.group(1) or m.group(2)):
+        if since is None:
+            return None, f"'{cell}' is a length, and the row has no Since clock to measure it from"
+        minutes = float(m.group(1) or 0) * 60 + float(m.group(2) or 0)
+        return since + dt.timedelta(minutes=minutes), None
+    return None, f"'{cell}' is neither a length (120 min, 2h30) nor a clock (YYYY-MM-DD HH:MM, HH:MM)"
 
 
 def git(root: str, *args: str) -> str:
@@ -140,8 +184,14 @@ def main() -> int:
     ap.add_argument("--sessions", default=None)
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--exit-code", action="store_true")
+    ap.add_argument("--now", default=None)
     args = ap.parse_args()
 
+    now = read_stamp(args.now) if args.now else dt.datetime.now().replace(second=0, microsecond=0)
+    if now is None:
+        print(f"fold-check: --now '{args.now}' is not YYYY-MM-DD HH:MM")
+        print("fold-check: could not check everything (above); this is NOT an all clear")
+        return 2
     root = os.path.abspath(args.root)
     try:
         queue_text = open(os.path.join(root, args.queue), encoding="utf-8").read()
@@ -176,6 +226,8 @@ def main() -> int:
         findings.append({"kind": kind, "session": session, "text": text})
 
     seen_live: set[str] = set()
+    unbounded: list[str] = []
+    has_stop_column = any("hard stop" in r for r, _ in running)
     for row, (sname, sid) in running:
         slot = row.get("slot", "?")
         brief = landed_briefing(listing, sname)
@@ -188,14 +240,32 @@ def main() -> int:
         if brief:
             name("FOLD OWED", sname, f"{sname} landed ({brief} on {args.ref}) and still holds slot {slot}: fold it from the file, then stop it by id")
             continue
-        if live is None:
+        named_before = len(findings)
+        if live is not None:
+            if state_row is None:
+                name("GONE", sname, f"the running table shows {sname} in slot {slot} and the tool no longer lists it: read its last output; fold only from a briefing")
+            elif state_row["state"] in WAITING:
+                name("NEEDS INPUT", sname, f"{sname} (slot {slot}) is waiting ({state_row['state']}): answer it the same minute, or tell it to record the question in section 7 and carry on")
+            elif state_row["state"] in ENDED:
+                name("ENDED, NO CARD", sname, f"{sname} (slot {slot}) reads {state_row['state']} with no briefing on {args.ref}: read its last output, then nudge or resume it")
+        since_cell = row.get("since", "")
+        since = read_stamp(since_cell)
+        stop, why_stop = deadline(row.get("hard stop", ""), since)
+        due, why_due = deadline(row.get("expected", ""), since)
+        for why in (why_stop, why_due):
+            if why:
+                notes.append(f"read failed: {sname}'s row: {why}")
+        if has_stop_column and stop is None and not why_stop:
+            unbounded.append(sname)
+        if len(findings) > named_before:
             continue
-        if state_row is None:
-            name("GONE", sname, f"the running table shows {sname} in slot {slot} and the tool no longer lists it: read its last output; fold only from a briefing")
-        elif state_row["state"] in WAITING:
-            name("NEEDS INPUT", sname, f"{sname} (slot {slot}) is waiting ({state_row['state']}): answer it the same minute, or tell it to record the question in section 7 and carry on")
-        elif state_row["state"] in ENDED:
-            name("ENDED, NO CARD", sname, f"{sname} (slot {slot}) reads {state_row['state']} with no briefing on {args.ref}: read its last output, then nudge or resume it")
+        if stop is not None and now > stop:
+            late = int((now - stop).total_seconds() // 60)
+            name("PAST HARD STOP", sname, f"{sname} (slot {slot}) is {late} minute(s) past its hard stop ({stop.strftime(STAMP)}) and has no card: read its last output, then let it close with what is proven or stop it by id")
+        elif due is not None and now > due:
+            late = int((now - due).total_seconds() // 60)
+            inside = f", inside its hard stop ({stop.strftime(STAMP)})" if stop is not None else ""
+            name("OVER EXPECTED", sname, f"{sname} (slot {slot}) is {late} minute(s) over its expected time ({due.strftime(STAMP)}){inside}: read its last output")
 
     if live is not None:
         running_names = {s[0].lower() for _, s in running}
@@ -211,7 +281,7 @@ def main() -> int:
 
     if args.json:
         print(json.dumps({"running": len(running), "findings": findings, "notes": notes,
-                          "checked": not notes}, indent=2))
+                          "no_hard_stop": unbounded, "checked": not notes}, indent=2))
     else:
         for n in notes:
             print(f"fold-check: {n}")
@@ -220,7 +290,8 @@ def main() -> int:
         if notes:
             print("fold-check: could not check everything (above); this is NOT an all clear")
         elif not findings:
-            print(f"fold-check: all clear: {len(running)} session(s) in the running table, none owes the chair anything")
+            tail = f"; no hard stop recorded for {', '.join(unbounded)}" if unbounded else ""
+            print(f"fold-check: all clear: {len(running)} session(s) in the running table, none owes the chair anything{tail}")
     if notes:
         return 2
     return 1 if (findings and args.exit_code) else 0

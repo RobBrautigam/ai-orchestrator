@@ -14,6 +14,14 @@ Sometimes one chair's world must not be visible to another: separate businesses,
 
 A wall is also a publish gate. This repository's own [`scripts/wall-check.py`](../scripts/wall-check.py) is the mechanical form of the test: a list of words that must not appear, kept outside the repository, run over every tracked file, exit 0 at zero hits. The same script, with a different list, checks a client deliverable before it leaves the building.
 
+**A gate run by hand is a gate skipped on the busy day, so the gate runs at the moment of action.** Three places, one script:
+
+- **Before the commit:** [`hooks/pre-commit`](../hooks/pre-commit) runs `wall-check.py --staged`, which reads the staged copy of each added or changed file (what the commit will hold, not what is on disk), and refuses the commit on a hit.
+- **On the commit message:** the optional [`hooks/commit-msg`](../hooks/commit-msg) runs `wall-check.py --commit-msg` when a list is configured, because a private name in a message is published the moment the branch is pushed.
+- **On what no git hook sees:** a pull request's title and body, a release note, an issue comment. These are published too. Write the text to a file first and run `wall-check.py --text-file <file>` before it is posted.
+
+Both hooks read the list's path from `git config wallcheck.list`, so the list itself never enters the repository; with no list they still check the built-in shapes (keys, emails, home paths) and say so. A hook that cannot find Python or the script refuses the commit with the reason rather than letting it through unchecked.
+
 ## The relay protocol
 
 Once two chairs run daily, clipboard relaying breaks: the operator becomes the single point of failure for cross-domain dependencies. The evolved system:

@@ -16,7 +16,7 @@
 
 ### Running
 
-One row per busy slot, ordered by slot. Columns: slot, repository, session (its name and short id), model and effort, worktree, the clock at launch, and one plain-English sentence of what it does and what the operator will be able to see when it lands. A free slot is a row too, with the clock it freed at and the line "on the chair: filled with the next authored prompt."
+One row per busy slot, ordered by slot. Columns: slot, repository, session (its name and short id), model and effort, worktree, the clock at launch, the expected time and the hard stop copied from the prompt (a length after the launch, such as `90 min` or `2h30`, or a clock), and one plain-English sentence of what it does and what the operator will be able to see when it lands. A free slot is a row too, with the clock it freed at and the line "on the chair: filled with the next authored prompt."
 
 The plain-English sentence is the point of the table. The operator reads it; the tool's own session list shows ids and states, never why a session exists.
 
@@ -39,9 +39,9 @@ Under the title: `N running in N of CAP slots | N waiting (N READY) | N landed s
 When a slot is free and a READY row is at the top of the waiting table, the chair, in one turn:
 
 1. Confirms the worktree exists (or creates it) and rotates its branch (chapter 2).
-2. Commits the dispatch prompt file if it is not already committed (chapter 4).
+2. Runs the prompt check on the dispatch prompt and fixes every refusal (chapter 4), then commits the file if it is not already committed.
 3. Launches the session from the worktree with the tool's own background command, **the model and effort explicit** (the adapters have the exact shape).
-4. Moves the row from waiting to running with the session id and the clock.
+4. Moves the row from waiting to running with the session id, the clock, and the prompt's expected time and hard stop.
 5. Writes the arc's board line.
 6. Says one line to the operator: `🚀 <arc> session N launched on <model> at <effort> in slot K: <what it does>`.
 
@@ -63,3 +63,5 @@ It is not a task tracker. A queue row is a session-sized unit of dispatch, not a
 ## The parity check
 
 Because the file is as fresh as the chair's last write, anything that displays it alongside the tool's own live session list prints a parity line ("the queue file says 6 running; the machine says 5"). A mismatch is a fold the chair owes or a launch it forgot to record, and the tick (chapter 8) reconciles it every hour.
+
+**A table written by hand drifts; a table generated from a record does not.** On the estate that wrote this, the hand-written running table drifted from the tool's own session list: a launch recorded with the wrong slot, a fold that freed the slot on the board but not in the queue. The fix was to write each launch and each fold as a record (one line, by the script that launched or folded) and render the table from those records, so no cell is typed. Start by hand; when the parity line fires twice in a week, generate the table instead of fixing the cells.

@@ -1,5 +1,26 @@
 # Changelog
 
+## Version 2.2 (November 2, 2026): the fold, the prompt and the publish gate, checked
+
+Version 2.1 turned the first rules into checks. In the weeks after it, the estate running the method kept finding the same thing: wherever a person (or the chair) had to compose, remember or notice something at the moment of action, it was sometimes not done. Version 2.2 moves four more of those moments into scripts, each with its selftest and each seen to fail on a deliberately broken copy.
+
+### What changed, and why
+
+1. **The fold lines.** A briefing ends with one fenced `fold-lines` block (`RESULT`, `BOARD`, `EFFORT`, `FINDINGS`, `SPEND`, one `OWED` line per deferred item with its band and owner, one `CARRY` line per row the prompt carried), and the chair folds by copying from it, never by composing. `scripts/fold-lines.py` reads it the way the fold will and refuses a bad band, an owner reason outside the six, a pipe in the board line, a result over 200 characters, two blocks in one file, or a carried row with no line. *Why:* a fold composed from eleven sections of prose depends on the chair noticing every owed item and every carried row. (Chapters 6, 7; `templates/briefing.md`.)
+2. **The prompt check, before every launch.** `scripts/prompt-check.py` refuses a dispatch prompt with no `DONE MEANS` line in the body the session receives (a line above the `---` does not count, nor a line that is only a duration), no readable `HARD STOP` (a clock with am, pm or a zone is refused), an `EXPECTED` later than the hard stop, an instruction to ask somebody, or a read-first path that is neither on `origin/main` nor on disk. *Why:* a prompt copied from an older one carries the older one's gaps, and the chair reads prompts by eye. (Chapters 3, 4, 8; `templates/dispatch-prompt.md`.)
+3. **The fold check knows the clock.** The queue's running table gains `Expected` and `Hard stop` columns copied from the prompt at the launch; `scripts/fold-check.py` names a row with no card `PAST HARD STOP` or `OVER EXPECTED`, with the minutes, says "could not check" (exit 2) for a cell it cannot read, takes `--now` for a given clock, and names any running row with no hard stop in its all clear. *Why:* the chair could not see a running session cross the hard stop its own prompt set. (Chapters 3, 7; `templates/QUEUE.md`.)
+4. **The publish gate at the moment of action.** `scripts/wall-check.py` gains `--staged` (the staged copy of each added or changed file, which is what the commit holds), `--commit-msg` and `--text-file` (for a pull request body or a release note, which no git hook sees). The new `hooks/pre-commit` runs it on every commit, and `hooks/commit-msg` runs it on the message when `git config wallcheck.list` names a list. Both refuse the commit, with the reason, when they cannot find Python or the script. *Why:* a check someone has to remember to run is still a rule. (Chapters 12, 13.)
+
+### Also, in the chapters
+
+- **Handing the chair over:** asked for by the operator, running sessions handed over running with their ids and hard stops, one handoff file, one starter prompt, and the outgoing chair stops its own waits. (Chapter 1.)
+- **A table written by hand drifts:** generate the running table from launch and fold records once the parity line keeps firing. (Chapter 3.)
+- **Rails written once,** in one file the tool loads, so thirty prompts do not carry thirty drifting copies. (Chapter 4.)
+- **A second reviewer only when the change asks for one:** over about 1,000 lines of code, or sign-in, page-security or money code. (Chapter 5.)
+- **What wakes the chair:** a scheduled prompt that could not fire while a background task ran (fifteen due times, none fired), and the two things that did work; a bounded wait has a condition and a bound, and never reads a file another session is still writing. (Chapter 8.)
+- **A test never seen red is not evidence:** `scripts/selftest.py` takes `--scripts-dir`, `--hook` and `--pre-commit`, so a broken copy is tested without touching the real files. (Chapter 13.)
+- **The selftest** grew from 24 checks to 39.
+
 ## Version 2.1 (September 23, 2026): rules turned into checks
 
 Version 2 described the background era. In the three days after it was written, the estate running it kept breaking the same few rules, not because the rules were unclear but because nothing checked them at the moment of action. Version 2.1 folds in what those days taught, generalized, and ships the checks as small scripts with a selftest.

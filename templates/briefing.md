@@ -131,3 +131,17 @@ Merged to `main` through PR [#<n>](<url>) at <clock>, squashed to `<sha>`, deplo
 | Rails: <each> | HELD |
 | Close: <each required element> | DONE |
 | Never ask a question; operator-only items to section 7 with a best guess | DONE: one question, with the guess recorded |
+
+---
+
+## The fold lines (the chair folds from this block and never composes it; `python scripts/fold-lines.py <this file>` exits 0)
+
+```fold-lines
+RESULT: <what changed for the operator, one sentence, under 200 characters, no file path>
+BOARD: <the board's one line for this landing, no pipe character>
+EFFORT: <model id, effort, wall clock, tokens in and out, from the usage record>
+FINDINGS: <the reviewer's count, and what was done about them>
+SPEND: <the metered spend, or $0>
+OWED: <title> || <detail> || <trigger that resurfaces it> || <now|next|later|someday> || <null|operator|operator: answer|sign_in|send|call|money|in_person>
+CARRY: <row id the prompt carried> done: <section>
+```

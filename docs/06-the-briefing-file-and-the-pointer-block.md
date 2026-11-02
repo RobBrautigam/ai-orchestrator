@@ -67,6 +67,32 @@ FULL DETAIL IS IN THE FILE. Read it line by line before triaging.
 
 **The fallback, the only exception:** if the file could not be committed and pushed, the block carries all eleven sections inline with `PUSHED: NOT PUSHED - <reason>. FULL BRIEFING INLINE BELOW`.
 
+## The fold lines: the part of the file the chair folds from
+
+The eleven sections are for a reader. The fold is a set of writes (the landed row, the board line, the owed items, the rows the prompt carried), and a chair that composes those writes from prose composes them differently every time: an owed item reworded, a carried row forgotten, a result line that names a file path the operator cannot open. So the file ends with one fenced block the chair copies from and never rewrites:
+
+```fold-lines
+RESULT: Refunds now show on the customer's statement the same day; proven on a test account.
+BOARD: payments-s4 landed, refund path synchronous, version 1.8.3 live
+EFFORT: model opus, effort high, 74 minutes, 2.1M tokens in, 61K out
+FINDINGS: reviewer 3, all fixed before the merge
+SPEND: $0
+OWED: Refund email copy || the receipt email still says "within 5 days" || the next copy pass on emails || next || operator: answer
+CARRY: 3f9a2c1e done: section 3.3
+```
+
+- `RESULT`, `BOARD`, `EFFORT`, `FINDINGS` and `SPEND` appear exactly once. `RESULT` is under 200 characters, plain words, no file path: it is the line the operator reads. `BOARD` carries no pipe character, because it lands in a table.
+- One `OWED` line per deferred item, five fields split by `||`: the title, the detail, the trigger that resurfaces it, the band (`now`, `next`, `later` or `someday`), and the owner. The owner is `null` (the chair does it), `operator`, or `operator: <reason>` with one of six reasons only the operator can act on: `answer`, `sign_in`, `send`, `call`, `money`, `in_person`. Anything else is refused, because "on the operator" without one of those reasons is work the chair could do.
+- One `CARRY` line per row the dispatch prompt carried: `<id> done: <section>`, `<id> open: <reason>`, or `<id> superseded: <id>`. A carried row with no line is a row that silently stays open forever.
+
+**The check:** [`scripts/fold-lines.py`](../scripts/fold-lines.py) reads the block the way the fold will and prints what the fold would write. The session runs it before the commit; the chair runs it before the fold, with `--carry <id>` for each row the prompt carried.
+
+```
+python scripts/fold-lines.py docs/orchestration/briefings/2026-01-15-payments-s4.md --carry 3f9a2c1e
+```
+
+Exit 0 prints `FOLD LINES OK` and each write in plain words; exit 1 prints `FOLD LINES REFUSED` and every reason; exit 2 is a file it could not read. Two blocks in one file are refused: the chair would not know which one is the landing. A briefing written before the block existed is folded from the file by hand, as before.
+
 ## Two emitters
 
 The session's close emits the briefing as its terminal artifact. The on-demand command `/orchestrator-brief` ([`skills/orchestrator-brief/`](../skills/orchestrator-brief/SKILL.md)) emits the same file and block mid-session when the chair wants a deep status without ending the session, and a `context-dump` mode for capturing a conversation's knowledge before it is closed for good. Same sections, same bookends, same order.

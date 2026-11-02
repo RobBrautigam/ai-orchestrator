@@ -8,6 +8,14 @@ any hit, 2 when it could not run. Standard library only.
 
     python scripts/wall-check.py --list ~/wall-list.txt
     python scripts/wall-check.py --list a.txt --list b.txt --allow "Jane Doe" --include-untracked
+    python scripts/wall-check.py --list ~/wall-list.txt --staged             # what the next commit adds
+    python scripts/wall-check.py --list ~/wall-list.txt --text-file body.md  # a pull request body before it is posted
+    python scripts/wall-check.py --list ~/wall-list.txt --commit-msg .git/COMMIT_EDITMSG
+
+The last three are the gate at the moment of action: hooks/pre-commit runs --staged, and
+hooks/commit-msg runs --commit-msg when a list is configured (git config wallcheck.list <path>).
+A pull request title and body, a release note and an issue comment are published too, and no
+git hook sees them: write the text to a file and run --text-file on it before it is posted.
 
 The list file: one term per line; blank lines and lines starting with # are
 ignored. Matching is case-insensitive, whole word at the front, and a space in a
@@ -94,6 +102,59 @@ def rel_or_none(path: str, root: str) -> str | None:
         return None
 
 
+def git_or_exit(root: str, *args: str) -> bytes:
+    try:
+        return subprocess.run(["git", "-C", root, *args], check=True, capture_output=True).stdout
+    except (OSError, subprocess.CalledProcessError) as exc:
+        detail = exc.stderr.decode("utf-8", "replace").strip() if isinstance(exc, subprocess.CalledProcessError) else exc
+        print(f"wall-check: git {' '.join(args[:2])} failed: {detail}", file=sys.stderr)
+        sys.exit(2)
+
+
+def read_text_or_exit(path: str) -> str:
+    try:
+        with open(os.path.expanduser(path), encoding="utf-8", errors="replace") as fh:
+            return fh.read()
+    except OSError as exc:
+        print(f"wall-check: cannot read {path}: {exc}", file=sys.stderr)
+        sys.exit(2)
+
+
+def commit_message(text: str) -> str:
+    """What the author wrote: git's comment lines and everything from its --verbose scissors line down left out."""
+    kept = []
+    for line in text.splitlines():
+        if line.startswith("# ------------------------ >8 ------------------------"):
+            break
+        if not line.startswith("#"):
+            kept.append(line)
+    return "\n".join(kept)
+
+
+def sources(args: argparse.Namespace, root: str):
+    """(label, text) for every text this run scans: given files, the staged files, or the tracked tree."""
+    if args.text_file or args.commit_msg:
+        for path in args.text_file:
+            yield path, read_text_or_exit(path)
+        if args.commit_msg:
+            yield "commit message", commit_message(read_text_or_exit(args.commit_msg))
+        return
+    if args.staged:
+        names = git_or_exit(root, "diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR").split(b"\0")
+        for raw in names:
+            rel = raw.decode("utf-8", "replace")
+            if not rel or os.path.splitext(rel)[1].lower() in SKIP_EXT:
+                continue
+            yield rel, git_or_exit(root, "show", f":{rel}").decode("utf-8", "replace")
+        return
+    for rel in tracked_files(root, args.include_untracked):
+        try:
+            with open(os.path.join(root, rel), encoding="utf-8", errors="replace") as fh:
+                yield rel, fh.read()
+        except OSError:
+            continue
+
+
 def inside_allowed(line: str, start: int, end: int, allowed: list[str]) -> bool:
     low = line.lower()
     for phrase in allowed:
@@ -114,6 +175,9 @@ def main() -> int:
     ap.add_argument("--include-untracked", action="store_true", help="also scan untracked, non-ignored files")
     ap.add_argument("--no-built-in", action="store_true", help="skip the built-in secret shapes")
     ap.add_argument("--self", action="store_true", help="also scan this script and the list files (off by default: they name the shapes they look for)")
+    ap.add_argument("--staged", action="store_true", help="scan what the next commit adds: the staged version of every added, copied, modified or renamed file (the pre-commit hook's mode)")
+    ap.add_argument("--text-file", action="append", default=[], help="scan this file's text instead of the tree (a pull request body, a release note); repeatable")
+    ap.add_argument("--commit-msg", default=None, help="scan a commit message file instead of the tree, git's comment lines and its --verbose diff left out (the commit-msg hook's mode)")
     args = ap.parse_args()
 
     root = args.root or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -126,14 +190,8 @@ def main() -> int:
     list_files = {rel_or_none(os.path.abspath(os.path.expanduser(p)), root) for p in args.list} - {None}
     hits = 0
     scanned = 0
-    for rel in tracked_files(root, args.include_untracked):
+    for rel, text in sources(args, root):
         if not args.self and (rel == this_file or rel in list_files):
-            continue
-        path = os.path.join(root, rel)
-        try:
-            with open(path, encoding="utf-8", errors="replace") as fh:
-                text = fh.read()
-        except OSError:
             continue
         scanned += 1
         for lineno, line in enumerate(text.splitlines(), 1):
