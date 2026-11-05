@@ -40,7 +40,9 @@ git -C ../myrepo-payments fetch origin
 git -C ../myrepo-payments checkout -b feat/payments-s4 origin/main
 ```
 
-You cannot check out `main` itself inside a worktree (the main checkout holds it), which is why the rotation is always `checkout -b` off `origin/main`. The old branch is deleted after its pull request merges. Bootstrap happens once, at creation: copy `.env` and its siblings, install dependencies, build shared packages. A dispatch prompt names what the chair confirmed is present ("`.env` and `node_modules` present") so the session does not re-install.
+You cannot check out `main` itself inside a worktree (the main checkout holds it), which is why the rotation is always `checkout -b` off `origin/main`. The old branch is deleted after its pull request merges. Bootstrap happens once, at creation: give the worktree its environment, install dependencies, build shared packages.
+
+**Keys live in one place; a worktree gets a pointer, not a copy.** Copying `.env` into every worktree leaves one copy of every key per folder, and a key rotated in one copy is stale in the rest. Keep the keys in one file outside every repository, scoped by repository, and give each worktree a one-line pointer to its scope (or a loader that reads the scope directly). A pre-commit check that refuses a staged key file closes the other half. A dispatch prompt names what the chair confirmed is present ("`.env` and `node_modules` present") so the session does not re-install.
 
 Before any branch operation in a standing worktree, the chair checks whether a session is live in it (the tool's session list, and the working tree's file times). Rotating under a live session is the concurrent-use defect by another route.
 

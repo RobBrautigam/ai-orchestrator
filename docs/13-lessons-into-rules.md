@@ -45,6 +45,10 @@ Every script in this repository is one:
 
 Each one was proven the same way before it was trusted: a toy case where it must say yes, a toy case where it must say no, and a deliberately broken copy that the test catches ([`scripts/selftest.py`](../scripts/selftest.py)). **A test never seen red is not evidence.** A new check counts only after a copy of the code it guards has been broken on purpose (a condition flipped, a refusal switched off) and the test has failed on that copy. `selftest.py` takes `--scripts-dir`, `--hook` and `--pre-commit` so a broken copy can be tested without touching the real files, and [`scripts/mutation-pass.py`](../scripts/mutation-pass.py) does exactly that for 22 guards, one at a time, and names any the selftest missed.
 
+## No new rule without its check, the same day
+
+A rules folder that grows every week is a sign the estate has an application problem, not a knowledge problem: each new paragraph is one more thing the chair must remember at the moment it is busiest. So a line added to a rule file names, the same day, the check that refuses its miss (a hook, a script, a lint or a test), in one register beside the rules: the rule, the check, and the file the check lives in. When no check can be written yet, the change that added the rule says so and owes the check by name. The register is what an audit reads first: a rule with no check is a rule waiting to be broken.
+
 ## Folding the operator's corrections
 
 The operator's corrections are the richest lessons and the easiest to lose. When the operator corrects how the chair works (say, a question they missed because it sat in the middle of a turn), the correction is written into the rule's own file the same day, with the operator's words verbatim and the date, and the fix is classed like any other miss. A correction the operator has to make twice is, by definition, a rule not applied, so the second time it gets a check.

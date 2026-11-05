@@ -1,5 +1,15 @@
 # Changelog
 
+## Version 2.3 (November 4, 2026): the operator's asks, checked by someone who did not do the work
+
+A briefing is the session's own account of its work, and the fold copies it. On the estate running the method, the operator found requests folded as done whose result, opened, did not do what they had asked. Version 2.3 adds the step that catches that, and two smaller lessons. Text only: no script changed, and the selftest still runs 47 checks.
+
+### What changed, and why
+
+1. **The ask ledger and its verifier.** Every request the operator makes is one row in their own words, with "done" in their terms and every quantity kept as a number. When a session that carried an ask lands, one fresh, read-only reviewer per ask reads the live surface against those words, never the session's briefing or final message, and returns MET or SHORT. The chair refuses a verdict that quotes the briefing, came from the session, or calls a counted ask done at zero. A `CARRY` line is a claim; only MET resolves the ask, and SHORT folds the session while the ask stays open. *Why:* a session grading its own work reads it generously. (Chapter 7.)
+2. **No new rule without its check, the same day.** A line added to a rule file names the check that refuses its miss in one register, or the change owes the check by name. *Why:* a rules folder that grows every week is an application problem, and more prose makes it worse. (Chapter 13.)
+3. **Keys in one place; a worktree gets a pointer, not a copy.** *Why:* one copy of every key per worktree means a rotated key stays stale in the rest. (Chapter 2.)
+
 ## Version 2.2 (November 2, 2026): the fold, the prompt and the publish gate, checked
 
 Version 2.1 turned the first rules into checks. In the weeks after it, the estate running the method kept finding the same thing: wherever a person (or the chair) had to compose, remember or notice something at the moment of action, it was sometimes not done. Version 2.2 moves four more of those moments into scripts, each with its selftest, and ships the mutation pass that breaks their guards on purpose.
