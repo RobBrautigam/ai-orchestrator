@@ -67,6 +67,10 @@ Your tool's exact commands are in [adapters/](adapters/). The rest of this page 
 
 ---
 
+## What's new in 2.3
+
+The operator's asks get a ledger and a verifier: a fresh, read-only reviewer that never did the work and never reads the session's own account of it opens the live result, checks it against the operator's own words, and only its MET resolves the ask. ([Chapter 7](docs/07-folding-from-files.md#the-operators-asks-checked-by-someone-who-did-not-do-the-work).) Also: no new rule without its check, the same day ([chapter 13](docs/13-lessons-into-rules.md#no-new-rule-without-its-check-the-same-day)), and keys in one place, with a pointer in each worktree instead of a copy ([chapter 2](docs/02-arcs-and-standing-worktrees.md#rotation-exactly)). No script changed; the selftest still runs 47 checks.
+
 ## What's new in 2.2
 
 Four more rules that kept being broken became checks, each with its selftest, and [`scripts/mutation-pass.py`](scripts/mutation-pass.py) now ships, so anyone can break 22 guards one at a time in a copy and see which, if any, the selftest misses. The full list, with the why for each, is in the [changelog](CHANGELOG.md).

@@ -60,6 +60,18 @@ When `READ:` fails, in order, and the operator is asked only at the last rung:
 11. Fill the freed slot from the top of the waiting table (chapter 3).
 12. One line to the operator: `✅ <arc> session N folded: <what changed>.` And, in the same turn, `🚀 <next arc> launched on <model> at <effort> in slot K.`
 
+## The operator's asks, checked by someone who did not do the work
+
+A session's briefing says what it did. That is a claim, written by the one party with every reason to read its own work generously, and the fold above copies it. On the estate that wrote this, the operator found sessions folded as done whose result, opened, did not do what they had asked. So the asks themselves get a ledger and a verifier.
+
+1. **The ask ledger.** Every request the operator makes is one row, in their own words, with what "done" means in their terms and any quantity they named kept as a number ("all 200 sites", never "the sites"). A prompt that carries an ask names its row.
+2. **The verifier.** When a session that carried an ask lands, the chair launches one fresh, read-only reviewer per ask. It gets the operator's words and the live surface (the page, the record, the merged code on main), and nothing else: it never opens the session's briefing or final message, and it is never the session that did the work. It returns MET or SHORT, with what it opened and what it saw.
+3. **The verdict is checked too.** The chair refuses a verdict that quotes the session's briefing, one that came from the session itself, and one that calls an ask with a quantity done while the count it read is zero.
+4. **Only MET resolves.** A `CARRY` line in the fold block is the session's claim. The ask resolves only when the verifier's verdict on the ledger is MET. A SHORT verdict still folds the session (its slot is freed, its owed items filed), and the ask stays open on the chair with the verifier's reason, for the next prompt.
+5. **The operator sees the ledger move.** When a turn changed the ledger, the chair's final message carries one line per change, so the operator never has to ask whether a request was really finished.
+
+Use the cheapest reviewer that can open the surface; the work is reading, not writing (chapter 9). A verifier per ask, not per session: one session can carry three asks and finish two.
+
 ## Re-sync before every triage
 
 Sessions merge on their own schedule. Before folding anything, the chair fetches main and reads the new commits: a merge with no briefing yet is still a landing to record, and a task another arc already shipped is not dispatched again. **Validate the task is still outstanding before dispatching**; a session's own handoff can be stale by the time it is read.
