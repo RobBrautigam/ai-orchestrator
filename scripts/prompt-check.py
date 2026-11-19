@@ -66,11 +66,13 @@ GLUE = {"the", "in", "within", "after", "by", "at", "of", "about", "under", "ove
 DONE_RE = re.compile(r"^\s*(?:[-*+]\s+|\d+[.)]\s+|#+\s+)?(?:\*\*|__)?DONE MEANS(?:\*\*|__)?\s*:(?:\*\*|__)?(.*)$")
 LIST_ITEM_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+(.*)$")
 HARD_RE = re.compile(r"HARD STOP", re.I)
+# A length, read the same way in the HARD STOP and EXPECTED lines (groups: the amount, the unit, a half after it).
 # The half sits before the unit ("two and a half hours") or after it ("an hour and a half"); both read.
-SPAN_RE = re.compile(r"(\d+(?:\.\d+)?|[a-z]+(?:-[a-z]+)?(?: and a half)?)\s*(minutes?|mins?|hours?|hrs?|h|m)\b(\s+and\s+a\s+half)?\s+after\s+(?:the\s+)?launch", re.I)
+LENGTH = r"(\d+(?:\.\d+)?|[a-z]+(?:-[a-z]+)?(?: and a half)?)\s*(minutes?|mins?|hours?|hrs?|h|m)\b(\s+and\s+a\s+half)?"
+SPAN_RE = re.compile(LENGTH + r"\s+after\s+(?:the\s+)?launch", re.I)
 # am, pm, UTC and GMT in any case; a zone abbreviation (EST, CEST) only in capitals, so "17:30 that day" stays a clock.
 CLOCK_RE = re.compile(r"(?<![\d:])([01]?\d|2[0-3]):([0-5]\d)(?![\d:])(\s*(?:(?i:a\.?m\.?|p\.?m\.?|utc|gmt)|[A-Z]{1,3}T)(?![A-Za-z]))?")
-EXPECTED_RE = re.compile(r"\bEXPECTED\s*:?\s*(\d+(?:\.\d+)?|[a-z]+(?:-[a-z]+)?(?: and a half)?)\s*(minutes?|mins?|hours?|hrs?|h|m)\b(\s+and\s+a\s+half)?", re.I)
+EXPECTED_RE = re.compile(r"\bEXPECTED\s*:?\s*" + LENGTH, re.I)
 ASK_RES = [
     re.compile(r"\bask\b[^.;\n]{0,40}?\b(?:if|when|whether)\b[^.;\n]{0,24}?\b(?:unclear|unsure|in doubt|ambiguous|needed|necessary)\b", re.I),
     re.compile(r"\b(?:ask|check with|confirm with)\s+(?:the\s+)?(?:operator|me|user|human|owner)\b", re.I),
@@ -90,15 +92,9 @@ def split_body(text: str) -> tuple[list[str], list[str]] | None:
             if lines[i].strip() == "---":
                 start = i + 1
                 break
-    fence = None
-    for i in range(start, len(lines)):
-        s = lines[i].strip()
-        if s.startswith("```") or s.startswith("~~~"):
-            mark = s[:3]
-            fence = None if fence == mark else (fence or mark)
-            continue
-        if fence is None and s == "---":
-            return lines[:i], lines[i + 1:]
+    for i, line, inside in unfenced(lines[start:]):
+        if not inside and line.strip() == "---":
+            return lines[:start + i], lines[start + i + 1:]
     return None
 
 

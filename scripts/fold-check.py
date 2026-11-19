@@ -68,6 +68,7 @@ import sys
 ENDED = {"completed", "complete", "done", "failed", "error", "stopped", "idle", "exited"}
 WAITING = {"needs input", "needs_input", "waiting", "blocked", "asking"}
 STAMP = "%Y-%m-%d %H:%M"
+NOT_CLEAR = "fold-check: could not check everything (above); this is NOT an all clear"
 LENGTH_RE = re.compile(r"^(?:(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hours?))?\s*(?:(\d+(?:\.\d+)?)\s*(?:m|min|mins|minutes?)?)?$", re.I)
 
 
@@ -190,14 +191,14 @@ def main() -> int:
     now = read_stamp(args.now) if args.now else dt.datetime.now().replace(second=0, microsecond=0)
     if now is None:
         print(f"fold-check: --now '{args.now}' is not YYYY-MM-DD HH:MM")
-        print("fold-check: could not check everything (above); this is NOT an all clear")
+        print(NOT_CLEAR)
         return 2
     root = os.path.abspath(args.root)
     try:
         queue_text = open(os.path.join(root, args.queue), encoding="utf-8").read()
     except OSError as exc:
         print(f"fold-check: read failed: the queue file {args.queue}: {exc}")
-        print("fold-check: could not check everything (above); this is NOT an all clear")
+        print(NOT_CLEAR)
         return 2
     t = tables(queue_text)
     notes: list[str] = []
@@ -288,7 +289,7 @@ def main() -> int:
         for f in findings:
             print(f"{f['kind']}: {f['text']}")
         if notes:
-            print("fold-check: could not check everything (above); this is NOT an all clear")
+            print(NOT_CLEAR)
         elif not findings:
             tail = f"; no hard stop recorded for {', '.join(unbounded)}" if unbounded else ""
             print(f"fold-check: all clear: {len(running)} session(s) in the running table, none owes the chair anything{tail}")

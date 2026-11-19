@@ -227,6 +227,10 @@ def main() -> int:
 
     this_file = rel_or_none(os.path.abspath(__file__), root)
     list_files = {rel_or_none(os.path.abspath(os.path.expanduser(p)), root) for p in args.list} - {None}
+    # One pass per line over the listed terms, then the built-in shapes, each with the label its hit prints.
+    checks = [(f"term '{term}'", pat) for term, pat in terms]
+    if not args.no_built_in:
+        checks += BUILT_IN.items()
     hits = 0
     scanned = 0
     for rel, text in sources(args, root):
@@ -234,19 +238,12 @@ def main() -> int:
             continue
         scanned += 1
         for lineno, line in enumerate(text.splitlines(), 1):
-            for term, pat in terms:
+            for label, pat in checks:
                 for m in pat.finditer(line):
                     if inside_allowed(line, m.start(), m.end(), args.allow):
                         continue
                     hits += 1
-                    print(f"{rel}:{lineno}: term '{term}': {line.strip()[:160]}")
-            if not args.no_built_in:
-                for name, pat in BUILT_IN.items():
-                    for m in pat.finditer(line):
-                        if inside_allowed(line, m.start(), m.end(), args.allow):
-                            continue
-                        hits += 1
-                        print(f"{rel}:{lineno}: {name}: {line.strip()[:160]}")
+                    print(f"{rel}:{lineno}: {label}: {line.strip()[:160]}")
     print(f"wall-check: {scanned} files scanned, {len(terms)} terms, {0 if args.no_built_in else len(BUILT_IN)} built-in shapes, {hits} hits")
     return 1 if hits else 0
 
