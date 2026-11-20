@@ -20,11 +20,11 @@ The commands below are POSIX shell: on Windows run them in Git Bash, and on macO
    python scripts/selftest.py
    ```
 
-   Fifty-four checks run against a toy repository built in a temporary folder: a queue, a worktree, a landed briefing, the fold check naming it (and naming a session past its hard stop), the worktree rotation refusing the unsafe cases, the prompt check refusing a prompt with no definition of done, the fold lines read the way the fold reads them, the publish gate catching a planted private name, email and home path in the tree, and a listed name in a staged commit, a commit message and a pull request body. Your own git configuration is shut out and never touched. The folder is deleted at the end (`--keep` leaves it for you to look at). It takes about two minutes on Windows, where git starts slowly, and ends:
+   Fifty-five checks run against a toy repository built in a temporary folder: a queue, a worktree, a landed briefing, the fold check naming it (and naming a session past its hard stop), the worktree rotation refusing the unsafe cases, the prompt check refusing a prompt with no definition of done, the fold lines read the way the fold reads them, the publish gate catching a planted private name, email and home path in the tree, and a listed name in a staged commit, a commit message and a pull request body. Your own git configuration is shut out and never touched. The folder is deleted at the end (`--keep` leaves it for you to look at). It takes about two minutes on Windows, where git starts slowly, and ends:
 
    ```
-   PASS 54: both hooks are committed executable (mode 100755), so git runs them on Linux and macOS
-   selftest: 54 of 54 checks passed
+   PASS 55: both hooks are committed executable (mode 100755), so git runs them on Linux and macOS
+   selftest: 55 of 55 checks passed
    ```
 
 2. **Copy the kit into your repository:**
@@ -174,7 +174,7 @@ The rule that does not change per tool: **every launch names its model and its e
 
 ## The scripts: rules turned into checks
 
-Standard library Python, no dependencies, each proven by [`scripts/selftest.py`](scripts/selftest.py) on a toy repository (and [`scripts/mutation-pass.py`](scripts/mutation-pass.py) breaks 43 of their guards in a copy, one at a time, to show the selftest fails when they do: guards in six scripts and both hooks, the commit-msg hook's attribution refusals among them; some single guards still have no break row). Each one refuses, or says "could not check", rather than report clean from a check that saw nothing: `done-on-main.py` refuses when no file resolved and the title has too few usable words to name any commit ([chapter 7](docs/07-folding-from-files.md#re-sync-before-every-triage)), and `fold-check.py` says "could not check" when its running table has no `Session` column, or when sessions run and its briefings folder is on neither the ref nor the disk.
+Standard library Python, no dependencies, each proven by [`scripts/selftest.py`](scripts/selftest.py) on a toy repository (and [`scripts/mutation-pass.py`](scripts/mutation-pass.py) breaks 45 of their guards in a copy, one at a time, to show the selftest fails when they do: guards in six scripts and both hooks, the commit-msg hook's attribution refusals among them; some single guards still have no break row). Each one refuses, or says "could not check", rather than report clean from a check that saw nothing: `done-on-main.py` refuses when no file resolved and the title has too few usable words to name any commit ([chapter 7](docs/07-folding-from-files.md#re-sync-before-every-triage)), and `fold-check.py` says "could not check" when its running table has rows and no `Session` column, or when sessions run and its briefings folder is on neither the ref nor the disk, or the ref spells it only in other letter case (on disk only, it reads all clear and says nothing has landed there, or that `--briefings` or `--ref` names the wrong place).
 
 | Script | What it checks | Chapter |
 |---|---|---|

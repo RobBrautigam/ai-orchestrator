@@ -7,7 +7,7 @@ briefing, then runs every script in scripts/ and the hook in hooks/ against it, 
 refusals and the negative controls included. Nothing outside the temporary folder is
 touched, and the folder is deleted at the end (--keep leaves it for reading).
 
-    python scripts/selftest.py            # about two minutes on Windows (1 min 19 s measured for 54 checks); one line per check
+    python scripts/selftest.py            # about two minutes on Windows (1 min 22 s measured for 55 checks); one line per check
     python scripts/selftest.py --keep     # leave the toy repositories on disk and print where
     python scripts/selftest.py --scripts-dir <dir> --hook <file> --pre-commit <file>   # against copies (scripts/mutation-pass.py)
 
@@ -170,10 +170,16 @@ def run_checks(tmp: str, scripts: str) -> None:
     # --- fold-check -------------------------------------------------------------------------
     fc = ("fold-check.py", "--root", main, "--exit-code", "--now", "2026-01-15 09:00")
     r = script(scripts, *fc)
+    j = script(scripts, *fc, "--json")
+    try:
+        nothing_landed = json.loads(j.stdout).get("nothing_landed") is True
+    except ValueError:
+        nothing_landed = False
     check(r.returncode == 0 and "all clear: 2 session(s)" in r.stdout and "no hard stop recorded for docs-s1" in r.stdout
-          and "nothing has landed in docs/orchestration/briefings on origin/main yet" in r.stdout,
-          "fold-check reads all clear before anything landed, says nothing has landed yet, and names the session with no hard stop",
-          r.stdout + r.stderr)
+          and "nothing has landed in docs/orchestration/briefings on origin/main yet, or --briefings or --ref names the wrong place" in r.stdout
+          and nothing_landed,
+          "fold-check reads all clear before anything landed, says nothing has landed yet (and in --json), and names the session with no hard stop",
+          r.stdout + r.stderr + j.stdout + j.stderr)
     fc_clock = ("fold-check.py", "--root", main, "--exit-code")
     r = script(scripts, *fc_clock, "--now", "2026-01-15 09:40")
     check(r.returncode == 1 and "OVER EXPECTED: demo-s1 (slot 1) is 15 minute(s) over" in r.stdout and "PAST HARD STOP" not in r.stdout,
@@ -213,6 +219,13 @@ def run_checks(tmp: str, scripts: str) -> None:
     r = script(scripts, *fc)
     check(r.returncode == 1 and "FOLD OWED: demo-s1 landed" in r.stdout and "docs-s1" not in r.stdout,
           "fold-check names the landed session as a fold owed, and only that one", r.stdout + r.stderr)
+    # The same folder in other letter case: on Windows and macOS the disk finds it, on Linux this makes it; the ref never has it.
+    os.makedirs(os.path.join(main, "docs/orchestration/Briefings"), exist_ok=True)
+    r = script(scripts, *fc, "--briefings", "docs/orchestration/Briefings")
+    check(r.returncode == 2 and "is spelled docs/orchestration/briefings on origin/main" in r.stdout and "NOT an all clear" in r.stdout
+          and "all clear:" not in r.stdout,
+          "fold-check says it could not check when its briefings folder differs from the ref's only in letter case, never all clear",
+          r.stdout + r.stderr)
     live = os.path.join(tmp, "live.json")
     with open(live, "w", encoding="utf-8") as fh:
         json.dump([{"name": "demo-s1", "id": "1a2b3c4d-0000", "state": "completed"},
@@ -277,7 +290,7 @@ def run_checks(tmp: str, scripts: str) -> None:
     r = script(scripts, "done-on-main.py", "--root", main, "--no-fetch", "--since", "deadbeef", "--files", "src/app.txt")
     check(r.returncode == 2 and "is not a commit here" in r.stdout, "done-on-main refuses a mistyped start instead of reading clean", r.stdout + r.stderr)
     r = script(scripts, *dm, "--files", "src/missing.txt", "--title", "fix the retry")
-    usable = script(scripts, *dm, "--files", "src/missing.txt", "--title", "add a retry button to failed refunds")
+    usable = script(scripts, *dm, "--files", "src/missing.txt", "--title", "the retry button")
     check(r.returncode == 2 and "REFUSED" in r.stdout and "1 usable word(s) (retry), fewer than --min-shared 2" in r.stdout
           and usable.returncode == 1 and "BY WORDS:" in usable.stdout,
           "done-on-main refuses when no file resolved and the title has too few usable words to name a commit, and answers on one that can",

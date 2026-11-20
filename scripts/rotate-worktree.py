@@ -18,8 +18,9 @@ Options:
     --base <ref>           the branch point (default origin/main, else origin/master)
     --env <path>           a gitignored file to copy from the main checkout when missing (repeatable;
                            default .env and .env.local); its contents are never printed
-    --no-env-copy          copy no environment file at all, for a repository that keeps its keys in one place
-                           outside its worktrees (chapter 2); not allowed with --env
+    --no-env-copy          copy no environment file at all, for a repository whose worktrees need none (a loader
+                           reads the keys' one place directly) or whose main checkout's .env still holds the keys
+                           (chapter 2); not allowed with --env
     --live-minutes <n>     a file written in the last n minutes means a session may be live (default 10)
     --not-live             the chair has checked the tool's session list and nothing runs here
     --no-fetch             do not fetch before rotating

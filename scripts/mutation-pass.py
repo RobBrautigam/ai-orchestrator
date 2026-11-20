@@ -110,7 +110,7 @@ BREAKS = [
     ("M37", "hooks/commit-msg", "a subject that only mentions something generated with a tool is refused",
      "'^[^[:alnum:]]*generated (with|by) '", "'generated (with|by) '"),
     ("M38", "scripts/fold-check.py", "a briefings folder on neither the ref nor the disk reads all clear",
-     "        if running and not listing and not os.path.isdir(os.path.join(root, args.briefings)):", "        if False:"),
+     "        if running and not listing and not on_disk:", "        if False:"),
     ("M39", "scripts/fold-check.py", "a running table with no Session column reads all clear",
      "    if rows and not any(\"session\" in r for r in rows):", "    if False:"),
     ("M40", "scripts/prompt-check.py", "an expected time past the hard stop passes",
@@ -121,6 +121,10 @@ BREAKS = [
      "if [ ! -f \"$script\" ]; then", "if false; then"),
     ("M43", "hooks/pre-commit", "no Python found is not refused",
      "if [ -z \"$py\" ]; then\n    echo \"commit refused", "if false; then\n    echo \"commit refused"),
+    ("M44", "scripts/fold-check.py", "a briefings folder the ref spells in other letter case reads all clear",
+     "        elif running and not listing and spelled:", "        elif False:"),
+    ("M45", "scripts/done-on-main.py", "a title with exactly --min-shared usable words is refused too",
+     "len(usable) < args.min_shared", "len(usable) <= args.min_shared"),
 ]
 
 
