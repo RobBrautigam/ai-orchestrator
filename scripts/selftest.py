@@ -7,7 +7,7 @@ briefing, then runs every script in scripts/ and the hook in hooks/ against it, 
 refusals and the negative controls included. Nothing outside the temporary folder is
 touched, and the folder is deleted at the end (--keep leaves it for reading).
 
-    python scripts/selftest.py            # about two minutes on Windows (1 min 51 s measured for 47 checks); one line per check
+    python scripts/selftest.py            # about two minutes on Windows (1 min 19 s measured for 54 checks); one line per check
     python scripts/selftest.py --keep     # leave the toy repositories on disk and print where
     python scripts/selftest.py --scripts-dir <dir> --hook <file> --pre-commit <file>   # against copies (scripts/mutation-pass.py)
 
@@ -269,7 +269,11 @@ def run_checks(tmp: str, scripts: str) -> None:
     r = script(scripts, *dm, "--files", "src/other.txt")
     check(r.returncode == 0 and "nothing on the main line" in r.stdout, "done-on-main reads clean when nothing touched the file", r.stdout + r.stderr)
     r = script(scripts, *dm, "--files", "src/missing.txt")
-    check(r.returncode == 2 and "REFUSED" in r.stdout, "done-on-main refuses rather than claim a check that saw nothing", r.stdout + r.stderr)
+    zero = script(scripts, *dm, "--files", "src/missing.txt", "--min-shared", "0")
+    check(r.returncode == 2 and "no file resolved and no title given" in r.stdout
+          and zero.returncode == 2 and "no file resolved and no title given" in zero.stdout,
+          "done-on-main refuses rather than claim a check that saw nothing (no file resolved and no title, even at --min-shared 0)",
+          r.stdout + r.stderr + zero.stdout + zero.stderr)
     r = script(scripts, "done-on-main.py", "--root", main, "--no-fetch", "--since", "deadbeef", "--files", "src/app.txt")
     check(r.returncode == 2 and "is not a commit here" in r.stdout, "done-on-main refuses a mistyped start instead of reading clean", r.stdout + r.stderr)
     r = script(scripts, *dm, "--files", "src/missing.txt", "--title", "fix the retry")
