@@ -174,7 +174,7 @@ The rule that does not change per tool: **every launch names its model and its e
 
 ## The scripts: rules turned into checks
 
-Standard library Python, no dependencies, each proven by [`scripts/selftest.py`](scripts/selftest.py) on a toy repository (and [`scripts/mutation-pass.py`](scripts/mutation-pass.py) breaks their guards in a copy, one at a time, to show the selftest fails when they do). Each one refuses, or says "could not check", rather than report clean from a check that saw nothing.
+Standard library Python, no dependencies, each proven by [`scripts/selftest.py`](scripts/selftest.py) on a toy repository (and [`scripts/mutation-pass.py`](scripts/mutation-pass.py) breaks 22 of their guards in a copy, one at a time, to show the selftest fails when they do; it has no break row yet for `rotate-worktree.py`, `done-on-main.py` or the commit-msg hook's attribution refusals). Each one refuses, or says "could not check", rather than report clean from a check that saw nothing, with one gap: given a title, `done-on-main.py` reads clean even when no file resolved and the title has too few usable words to name any commit ([chapter 7](docs/07-folding-from-files.md#re-sync-before-every-triage)).
 
 | Script | What it checks | Chapter |
 |---|---|---|
