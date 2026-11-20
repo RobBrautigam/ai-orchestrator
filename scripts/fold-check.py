@@ -51,9 +51,13 @@ as landed when its file name ends with the session name the running table shows
 "-interim") is never a landing. The running and landed tables are found under headings whose
 first word is "Running" and "Landed" (an emoji before the word is fine).
 
-When anything could not be read (the queue file, the ref, the session list, or a queue with no
-running table), it never says "all clear": it prints "could not check" with the reason and exits 2,
-whatever --exit-code says, because a false all clear is this check's worst failure.
+When anything could not be read (the queue file, the ref, the session list, a queue with no running
+table, a running table with rows and no Session column, or, while sessions run, a briefings folder that
+is neither on the ref nor on disk, or that the ref spells only in other letter case), it never says
+"all clear": it prints "could not check" with the reason and exits 2, whatever --exit-code says,
+because a false all clear is this check's worst failure. A briefings folder on disk and not yet on the
+ref is how a repository looks before its first landing: the all-clear line then says nothing has
+landed there yet, or that --briefings or --ref names the wrong place (--json: "nothing_landed": true).
 """
 from __future__ import annotations
 
@@ -204,15 +208,34 @@ def main() -> int:
     notes: list[str] = []
     if "running" not in t:
         notes.append(f"read failed: no running table in {args.queue} (a '## Running' heading followed by a table)")
-    running = [(r, session_of(r.get("session", ""))) for r in t.get("running", [])]
+    rows = t.get("running", [])
+    if rows and not any("session" in r for r in rows):
+        notes.append(f"read failed: the running table in {args.queue} has {len(rows)} row(s) and no Session column")
+    running = [(r, session_of(r.get("session", ""))) for r in rows]
     running = [(r, s) for r, s in running if s]
     landed_names = {session_of(r.get("session", ""))[0].lower() for r in t.get("landed", []) if session_of(r.get("session", ""))}
 
+    folder = args.briefings.replace("\\", "/").rstrip("/")
+    on_disk = os.path.isdir(os.path.join(root, folder))
+    spelled: list[str] = []
     try:
-        listing = git(root, "ls-tree", "-r", "--name-only", args.ref, "--", args.briefings.rstrip("/") + "/").splitlines()
+        listing = git(root, "ls-tree", "-r", "--name-only", args.ref, "--", folder + "/").splitlines()
+        if running and not listing and on_disk:
+            # The ref's paths are case-sensitive and a Windows or macOS disk is not: the same folder spelled otherwise.
+            prefix = folder.lower() + "/"
+            spelled = sorted({p[: len(prefix) - 1] for p in git(root, "ls-tree", "-r", "--name-only", args.ref).splitlines()
+                              if p.lower().startswith(prefix)})
     except RuntimeError as exc:
         listing = []
         notes.append(f"read failed: briefings on {args.ref}: {exc}")
+    else:
+        # Not on the ref is also how a repository looks before its first landing; not on disk either is a wrong path.
+        if running and not listing and not on_disk:
+            notes.append(f"read failed: the briefings folder {args.briefings} is neither on {args.ref} nor on disk, so no landing "
+                         "can be seen: --briefings names the wrong folder, or the folder was never made")
+        elif running and not listing and spelled:
+            notes.append(f"read failed: the briefings folder {args.briefings} is spelled {', '.join(spelled)} on {args.ref}, "
+                         "so no landing can be seen: give --briefings as the ref spells it")
 
     live: list[dict[str, str]] | None = None
     if args.sessions:
@@ -282,7 +305,7 @@ def main() -> int:
 
     if args.json:
         print(json.dumps({"running": len(running), "findings": findings, "notes": notes,
-                          "no_hard_stop": unbounded, "checked": not notes}, indent=2))
+                          "no_hard_stop": unbounded, "nothing_landed": bool(running and not listing), "checked": not notes}, indent=2))
     else:
         for n in notes:
             print(f"fold-check: {n}")
@@ -292,6 +315,8 @@ def main() -> int:
             print(NOT_CLEAR)
         elif not findings:
             tail = f"; no hard stop recorded for {', '.join(unbounded)}" if unbounded else ""
+            if running and not listing:
+                tail += f"; nothing has landed in {args.briefings} on {args.ref} yet, or --briefings or --ref names the wrong place"
             print(f"fold-check: all clear: {len(running)} session(s) in the running table, none owes the chair anything{tail}")
     if notes:
         return 2

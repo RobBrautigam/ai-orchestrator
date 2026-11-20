@@ -7,7 +7,7 @@ briefing, then runs every script in scripts/ and the hook in hooks/ against it, 
 refusals and the negative controls included. Nothing outside the temporary folder is
 touched, and the folder is deleted at the end (--keep leaves it for reading).
 
-    python scripts/selftest.py            # about two minutes on Windows (1 min 51 s measured for 47 checks); one line per check
+    python scripts/selftest.py            # about two minutes on Windows (1 min 22 s measured for 55 checks); one line per check
     python scripts/selftest.py --keep     # leave the toy repositories on disk and print where
     python scripts/selftest.py --scripts-dir <dir> --hook <file> --pre-commit <file>   # against copies (scripts/mutation-pass.py)
 
@@ -120,6 +120,8 @@ def run_checks(tmp: str, scripts: str) -> None:
     write(os.path.join(main, "docs/orchestration/prompts/QUEUE.md"), QUEUE)
     write(os.path.join(main, "src/app.txt"), "refunds\n")
     write(os.path.join(main, "src/other.txt"), "other\n")
+    # The quick start's mkdir: the briefings folder is on disk, and on no ref until the first briefing lands.
+    os.makedirs(os.path.join(main, "docs/orchestration/briefings"), exist_ok=True)
     commit(main, "chore: the toy repository")
     git(main, "push", "-q", "-u", "origin", "main")
 
@@ -168,8 +170,16 @@ def run_checks(tmp: str, scripts: str) -> None:
     # --- fold-check -------------------------------------------------------------------------
     fc = ("fold-check.py", "--root", main, "--exit-code", "--now", "2026-01-15 09:00")
     r = script(scripts, *fc)
-    check(r.returncode == 0 and "all clear: 2 session(s)" in r.stdout and "no hard stop recorded for docs-s1" in r.stdout,
-          "fold-check reads all clear before anything landed, and names the session with no hard stop", r.stdout + r.stderr)
+    j = script(scripts, *fc, "--json")
+    try:
+        nothing_landed = json.loads(j.stdout).get("nothing_landed") is True
+    except ValueError:
+        nothing_landed = False
+    check(r.returncode == 0 and "all clear: 2 session(s)" in r.stdout and "no hard stop recorded for docs-s1" in r.stdout
+          and "nothing has landed in docs/orchestration/briefings on origin/main yet, or --briefings or --ref names the wrong place" in r.stdout
+          and nothing_landed,
+          "fold-check reads all clear before anything landed, says nothing has landed yet (and in --json), and names the session with no hard stop",
+          r.stdout + r.stderr + j.stdout + j.stderr)
     fc_clock = ("fold-check.py", "--root", main, "--exit-code")
     r = script(scripts, *fc_clock, "--now", "2026-01-15 09:40")
     check(r.returncode == 1 and "OVER EXPECTED: demo-s1 (slot 1) is 15 minute(s) over" in r.stdout and "PAST HARD STOP" not in r.stdout,
@@ -187,6 +197,17 @@ def run_checks(tmp: str, scripts: str) -> None:
     r = script(scripts, *fc, "--ref", "origin/no-such-branch")
     check(r.returncode == 2 and "NOT an all clear" in r.stdout and "all clear:" not in r.stdout,
           "fold-check never says all clear when it could not read the ref", r.stdout + r.stderr)
+    r = script(scripts, *fc, "--briefings", "docs/orchestration/briefngs")
+    check(r.returncode == 2 and "is neither on origin/main nor on disk" in r.stdout and "NOT an all clear" in r.stdout
+          and "all clear:" not in r.stdout,
+          "fold-check says it could not check when its briefings folder is on neither the ref nor the disk (a mistyped --briefings)",
+          r.stdout + r.stderr)
+    write(os.path.join(main, "docs/orchestration/prompts/QUEUE.md"), queue_now.replace("| Slot | Repo | Session |", "| Slot | Repo | Name |"))
+    r = script(scripts, *fc)
+    check(r.returncode == 2 and "no Session column" in r.stdout and "NOT an all clear" in r.stdout and "all clear:" not in r.stdout,
+          "fold-check says it could not check when the running table has rows and no Session column, never all clear about 0 sessions",
+          r.stdout + r.stderr)
+    write(os.path.join(main, "docs/orchestration/prompts/QUEUE.md"), queue_now)
     write(os.path.join(main, "docs/orchestration/briefings/2026-01-15-demo-s1-interim.md"), "# interim\n")
     commit(main, "docs: an interim briefing")
     git(main, "push", "-q", "origin", "main")
@@ -198,6 +219,13 @@ def run_checks(tmp: str, scripts: str) -> None:
     r = script(scripts, *fc)
     check(r.returncode == 1 and "FOLD OWED: demo-s1 landed" in r.stdout and "docs-s1" not in r.stdout,
           "fold-check names the landed session as a fold owed, and only that one", r.stdout + r.stderr)
+    # The same folder in other letter case: on Windows and macOS the disk finds it, on Linux this makes it; the ref never has it.
+    os.makedirs(os.path.join(main, "docs/orchestration/Briefings"), exist_ok=True)
+    r = script(scripts, *fc, "--briefings", "docs/orchestration/Briefings")
+    check(r.returncode == 2 and "is spelled docs/orchestration/briefings on origin/main" in r.stdout and "NOT an all clear" in r.stdout
+          and "all clear:" not in r.stdout,
+          "fold-check says it could not check when its briefings folder differs from the ref's only in letter case, never all clear",
+          r.stdout + r.stderr)
     live = os.path.join(tmp, "live.json")
     with open(live, "w", encoding="utf-8") as fh:
         json.dump([{"name": "demo-s1", "id": "1a2b3c4d-0000", "state": "completed"},
@@ -232,6 +260,13 @@ def run_checks(tmp: str, scripts: str) -> None:
     os.remove(dst)
     r = script(scripts, rw, wt, "--hooks-only", "--require-hook")
     check(r.returncode == 1 and "no commit-msg hook runs" in r.stdout, "rotate-worktree says plainly when no hook runs in the worktree", r.stdout + r.stderr)
+    os.remove(os.path.join(wt, ".env"))
+    r = script(scripts, rw, wt, "feat/demo-s3", "--not-live", "--no-env-copy")
+    both = script(scripts, rw, wt, "feat/demo-s4", "--not-live", "--dry-run", "--no-env-copy", "--env", ".env")
+    check(r.returncode == 0 and "ROTATED: feat/demo-s3" in r.stdout and "NO COPY:" in r.stdout and "COPIED" not in r.stdout
+          and not os.path.exists(os.path.join(wt, ".env")) and both.returncode == 2 and "not allowed with" in both.stderr,
+          "rotate-worktree --no-env-copy rotates and copies no environment file (keys kept in one place), and refuses --env beside it",
+          r.stdout + r.stderr + both.stdout + both.stderr)
 
     # --- done-on-main ---------------------------------------------------------------------
     brief = "docs/orchestration/briefings/2026-01-15-demo-s1.md"
@@ -247,9 +282,19 @@ def run_checks(tmp: str, scripts: str) -> None:
     r = script(scripts, *dm, "--files", "src/other.txt")
     check(r.returncode == 0 and "nothing on the main line" in r.stdout, "done-on-main reads clean when nothing touched the file", r.stdout + r.stderr)
     r = script(scripts, *dm, "--files", "src/missing.txt")
-    check(r.returncode == 2 and "REFUSED" in r.stdout, "done-on-main refuses rather than claim a check that saw nothing", r.stdout + r.stderr)
+    zero = script(scripts, *dm, "--files", "src/missing.txt", "--min-shared", "0")
+    check(r.returncode == 2 and "no file resolved and no title given" in r.stdout
+          and zero.returncode == 2 and "no file resolved and no title given" in zero.stdout,
+          "done-on-main refuses rather than claim a check that saw nothing (no file resolved and no title, even at --min-shared 0)",
+          r.stdout + r.stderr + zero.stdout + zero.stderr)
     r = script(scripts, "done-on-main.py", "--root", main, "--no-fetch", "--since", "deadbeef", "--files", "src/app.txt")
     check(r.returncode == 2 and "is not a commit here" in r.stdout, "done-on-main refuses a mistyped start instead of reading clean", r.stdout + r.stderr)
+    r = script(scripts, *dm, "--files", "src/missing.txt", "--title", "fix the retry")
+    usable = script(scripts, *dm, "--files", "src/missing.txt", "--title", "the retry button")
+    check(r.returncode == 2 and "REFUSED" in r.stdout and "1 usable word(s) (retry), fewer than --min-shared 2" in r.stdout
+          and usable.returncode == 1 and "BY WORDS:" in usable.stdout,
+          "done-on-main refuses when no file resolved and the title has too few usable words to name a commit, and answers on one that can",
+          r.stdout + r.stderr + usable.stdout + usable.stderr)
 
     block_checks(tmp, scripts)
     prompt_checks(tmp, scripts, main)
@@ -348,7 +393,7 @@ def prompt_checks(tmp: str, scripts: str, main: str) -> None:
     write(path, hedged)
     r = script(scripts, "prompt-check.py", path, "--root", main)
     check(r.returncode == 1 and r.stdout.count("tells the session to ask") == 2,
-          "prompt-check refuses an ask behind a negation that does not govern it (\"if you are not sure, ask\", \"do not hesitate to ask\")",
+          "prompt-check refuses an ask behind a negation that does not govern it (\"if you are not sure, ask the operator\", \"do not hesitate to ask the operator\")",
           r.stdout + r.stderr)
     prose = READY_PROMPT.replace("EXPECTED: 90 minutes. HARD STOP: 120 minutes after launch.",
                                  "Never stop working before the hard stop.\n\nEXPECTED: 60 minutes. HARD STOP: an hour and a half after launch.")
@@ -358,6 +403,11 @@ def prompt_checks(tmp: str, scripts: str, main: str) -> None:
     check(r.returncode == 0 and "OK HARD STOP: 90 minutes after launch" in r.stdout,
           "prompt-check reads the HARD STOP line past prose that mentions the hard stop, and \"an hour and a half\" as 90 minutes",
           r.stdout + r.stderr)
+    path = os.path.join(tmp, "prompts", "over.md")
+    write(path, READY_PROMPT.replace("EXPECTED: 90 minutes.", "EXPECTED: 150 minutes."))
+    r = script(scripts, "prompt-check.py", path, "--root", main)
+    check(r.returncode == 1 and "EXPECTED (150 minutes) is past the HARD STOP (120 minutes)" in r.stdout,
+          "prompt-check refuses an expected time past the hard stop", r.stdout + r.stderr)
 
 
 def publish_gate_checks(tmp: str, scripts: str) -> None:
@@ -424,6 +474,25 @@ def publish_gate_checks(tmp: str, scripts: str) -> None:
     check(before.returncode != 0 and after.returncode == 0,
           "the pre-commit gate refuses a lockfile's checksum, and lets it through once the path is skipped (wallcheck.skip)",
           before.stdout + before.stderr + after.stdout + after.stderr)
+    write(os.path.join(pub, "page.md"), "# a page\n")
+    git(pub, "add", "page.md")
+    git(pub, "config", "wallcheck.script", fwd(os.path.join(tmp, "no-such-wall-check.py")))
+    bad = git(pub, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "docs: a page")
+    git(pub, "config", "wallcheck.script", fwd(os.path.join(scripts, "wall-check.py")))
+    check(bad.returncode != 0 and "no-such-wall-check.py is missing" in bad.stdout + bad.stderr,
+          "the pre-commit gate refuses a commit when the publish gate's script is missing", bad.stdout + bad.stderr)
+    # Shims named python, python3 and py that are not Python 3.9: the hook's search must find none and refuse.
+    shims = os.path.join(tmp, "no-python")
+    for name in ("python", "python3", "py"):
+        write(os.path.join(shims, name), "#!/bin/sh\nexit 1\n")
+        os.chmod(os.path.join(shims, name), 0o755)
+    git(pub, "config", "--unset", "wallcheck.python")
+    bad = subprocess.run(["git", "-C", pub, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "docs: a page"],
+                         capture_output=True, text=True, encoding="utf-8", env=dict(ENV, PATH=shims + os.pathsep + ENV.get("PATH", "")))
+    git(pub, "config", "wallcheck.python", fwd(sys.executable))
+    check(bad.returncode != 0 and "no Python 3.9 or later found" in bad.stdout + bad.stderr,
+          "the pre-commit gate refuses a commit when it finds no Python to run the publish gate", bad.stdout + bad.stderr)
+    git(pub, "rm", "-q", "--cached", "page.md")
     modes = git(REPO, "ls-files", "-s", "hooks/pre-commit", "hooks/commit-msg")
     lines = modes.stdout.split("\n")
     check(modes.returncode == 0 and len([x for x in lines if x.startswith("100755 ")]) == 2,

@@ -25,8 +25,9 @@ Options:
 
 Exit 0 nothing on the ref since the start touched the files or shares the words; 1 at least one commit
 is named (read each before writing the prompt); 2 refused (no start, a start or ref that does not resolve,
-a failed fetch or any failed git call, or no file resolved and no title, so a clean answer would claim a
-check that saw nothing). Paths may be written with either slash.
+a failed fetch or any failed git call, or no file resolved and either no title or a title with fewer usable
+words than --min-shared, so a clean answer would claim a check that saw nothing). A usable word is one of
+four or more characters that is not in the common list below. Paths may be written with either slash.
 """
 from __future__ import annotations
 
@@ -103,6 +104,11 @@ def main() -> int:
             print(f"NOT IN TREE: {p} (left out)")
     if not files and not args.title:
         print("REFUSED: no file resolved and no title given; a clean answer would claim a check that saw nothing")
+        return 2
+    usable = words(args.title)
+    if not files and len(usable) < args.min_shared:
+        print(f"REFUSED: no file resolved and the title has {len(usable)} usable word(s) ({', '.join(sorted(usable)) or 'none'}), "
+              f"fewer than --min-shared {args.min_shared}, so it can name no commit; a clean answer would claim a check that saw nothing")
         return 2
 
     rng = f"{start}..{args.ref}"

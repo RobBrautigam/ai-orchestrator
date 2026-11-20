@@ -18,6 +18,9 @@ Options:
     --base <ref>           the branch point (default origin/main, else origin/master)
     --env <path>           a gitignored file to copy from the main checkout when missing (repeatable;
                            default .env and .env.local); its contents are never printed
+    --no-env-copy          copy no environment file at all, for a repository whose worktrees need none (a loader
+                           reads the keys' one place directly) or whose main checkout's .env still holds the keys
+                           (chapter 2); not allowed with --env
     --live-minutes <n>     a file written in the last n minutes means a session may be live (default 10)
     --not-live             the chair has checked the tool's session list and nothing runs here
     --no-fetch             do not fetch before rotating
@@ -30,7 +33,8 @@ In order, each step printed on its own line:
        --live-minutes and --not-live was not given; when <branch> exists holding commits that are on
        no remote branch (a reset would strand them).
     2. fetch, then `git checkout -q -B <branch> <base>`.
-    3. each --env file copied from the main checkout when the worktree lacks it AND git ignores it.
+    3. each --env file copied from the main checkout when the worktree lacks it AND git ignores it;
+       with --no-env-copy, none is copied and the NO COPY line says so.
     4. the proof: the commit-msg hook git would run in this worktree (core.hooksPath, else the
        repository's hooks folder) accepts an honest message and refuses one carrying a
        Co-Authored-By trailer, through `git hook run` (git 2.36 or later). No hook at all is said
@@ -107,7 +111,9 @@ def main() -> int:
     ap.add_argument("worktree")
     ap.add_argument("branch", nargs="?")
     ap.add_argument("--base", default=None)
-    ap.add_argument("--env", action="append", default=None)
+    keys = ap.add_mutually_exclusive_group()
+    keys.add_argument("--env", action="append", default=None)
+    keys.add_argument("--no-env-copy", action="store_true")
     ap.add_argument("--live-minutes", type=float, default=10.0)
     ap.add_argument("--not-live", action="store_true")
     ap.add_argument("--no-fetch", action="store_true")
@@ -176,7 +182,9 @@ def main() -> int:
             return 1
         say("ROTATED", f"{args.branch} at {run(wt, 'rev-parse', '--short', 'HEAD').stdout.strip()} off {base}")
 
-    for rel in args.env or [".env", ".env.local"]:
+    if args.no_env_copy:
+        say("NO COPY", "--no-env-copy: no environment file copied from the main checkout")
+    for rel in [] if args.no_env_copy else (args.env or [".env", ".env.local"]):
         src, dst = os.path.join(main, rel), os.path.join(wt, rel)
         if os.path.exists(dst) or not os.path.isfile(src):
             continue
