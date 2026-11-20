@@ -54,7 +54,7 @@ So the rotation is one command, [`scripts/rotate-worktree.py`](../scripts/rotate
 
 1. **Refuses** (exit 2, nothing changed) the main checkout; a folder that is not the top of a worktree; uncommitted tracked changes; a file written in the last ten minutes unless the chair says it checked the session list (`--not-live`); and a branch that already holds commits on no remote branch, which a reset would strand.
 2. Fetches and runs `git checkout -q -B <branch> origin/main`.
-3. Copies `.env` and its siblings from the main checkout when the worktree lacks them AND git ignores them (a copy that would show as work is refused), never printing their contents. It copies whatever those files hold: under the keys rule above, at most the pointer; where the main checkout's `.env` still holds the keys themselves, it makes by default the copy that rule forbids.
+3. Copies `.env` and its siblings from the main checkout when the worktree lacks them AND git ignores them (a copy that would show as work is refused), never printing their contents. It copies whatever those files hold: under the keys rule above, at most the pointer; where the main checkout's `.env` or `.env.local` still holds the keys themselves, by default it makes the copy that rule forbids.
 4. **Ends on a proof:** the commit-msg hook git would run in that worktree accepts an honest message and refuses a message carrying the trailer the policy forbids (through `git hook run`). No hook at all is said plainly, and `--require-hook` makes it a failure.
 
 The same shape works for any other hook a repository depends on. The lesson generalizes beyond hooks: **a folder the repository ignores is a folder a worktree does not have.**
