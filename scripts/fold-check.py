@@ -51,9 +51,12 @@ as landed when its file name ends with the session name the running table shows
 "-interim") is never a landing. The running and landed tables are found under headings whose
 first word is "Running" and "Landed" (an emoji before the word is fine).
 
-When anything could not be read (the queue file, the ref, the session list, or a queue with no
-running table), it never says "all clear": it prints "could not check" with the reason and exits 2,
-whatever --exit-code says, because a false all clear is this check's worst failure.
+When anything could not be read (the queue file, the ref, the session list, a queue with no running
+table, a running table with rows and no Session column, or, while sessions run, a briefings folder that
+is neither on the ref nor on disk), it never says "all clear": it prints "could not check" with the
+reason and exits 2, whatever --exit-code says, because a false all clear is this check's worst failure.
+A briefings folder on disk and not yet on the ref is how a repository looks before its first landing:
+the all-clear line then says nothing has landed there yet.
 """
 from __future__ import annotations
 
@@ -204,7 +207,10 @@ def main() -> int:
     notes: list[str] = []
     if "running" not in t:
         notes.append(f"read failed: no running table in {args.queue} (a '## Running' heading followed by a table)")
-    running = [(r, session_of(r.get("session", ""))) for r in t.get("running", [])]
+    rows = t.get("running", [])
+    if rows and not any("session" in r for r in rows):
+        notes.append(f"read failed: the running table in {args.queue} has {len(rows)} row(s) and no Session column")
+    running = [(r, session_of(r.get("session", ""))) for r in rows]
     running = [(r, s) for r, s in running if s]
     landed_names = {session_of(r.get("session", ""))[0].lower() for r in t.get("landed", []) if session_of(r.get("session", ""))}
 
@@ -213,6 +219,11 @@ def main() -> int:
     except RuntimeError as exc:
         listing = []
         notes.append(f"read failed: briefings on {args.ref}: {exc}")
+    else:
+        # Not on the ref is also how a repository looks before its first landing; not on disk either is a wrong path.
+        if running and not listing and not os.path.isdir(os.path.join(root, args.briefings)):
+            notes.append(f"read failed: the briefings folder {args.briefings} is neither on {args.ref} nor on disk, so no landing "
+                         "can be seen: --briefings names the wrong folder, or the folder was never made")
 
     live: list[dict[str, str]] | None = None
     if args.sessions:
@@ -292,6 +303,8 @@ def main() -> int:
             print(NOT_CLEAR)
         elif not findings:
             tail = f"; no hard stop recorded for {', '.join(unbounded)}" if unbounded else ""
+            if running and not listing:
+                tail += f"; nothing has landed in {args.briefings} on {args.ref} yet"
             print(f"fold-check: all clear: {len(running)} session(s) in the running table, none owes the chair anything{tail}")
     if notes:
         return 2
